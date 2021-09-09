@@ -8,7 +8,15 @@ from bokeh.plotting import figure, show, output_file
 from bokeh.models import LinearAxis, ColumnDataSource, Range1d, LabelSet, Label, TableColumn, DataTable
 
 redoFlagStructure = False
-exportFinalFiles = False
+dict_exportFiles = {
+    "export_nova":      0,
+    "export_smeralda":  0
+}
+
+dict_filterRawData = {
+    "filter_trueWind": 1
+}
+maxTrueWindValue = 30
 
 #region nova subfolders
 dict_readTheseSubFiles_nova = {
@@ -195,9 +203,9 @@ flag_rawData_DG3_LNG_absoluteConsumptionPerHour = "DG3 LNG MT/hour this sample"
 flag_rawData_DG4_LNG_absoluteConsumptionPerHour = "DG4 LNG MT/hour this sample"
 
 flag_rawData_EngineLoadPercent_DG1 = "DG1 load percent"
-flag_rawData_EngineLoadPercent_DG2 = "DG1 load percent"
-flag_rawData_EngineLoadPercent_DG3 = "DG1 load percent"
-flag_rawData_EngineLoadPercent_DG4 = "DG1 load percent"
+flag_rawData_EngineLoadPercent_DG2 = "DG2 load percent"
+flag_rawData_EngineLoadPercent_DG3 = "DG3 load percent"
+flag_rawData_EngineLoadPercent_DG4 = "DG4 load percent"
 
 flag_rawData_enginesRunning = "DGs running"
 
@@ -206,6 +214,9 @@ flag_rawData_total_MainEngine_PWR = "Total Main Engine PWR"
 flag_rawData_total_POD_PWR = "Total PROP PWR"
 flag_rawData_total_POD_MTR_PRW = "Total POD MTR PWR"
 flag_rawData_total_LNG_GVU_Flow = "TOTAL LNG FLOW"
+
+flag_rawData_avgSFOC_runningEngines = "AVG SFOC running engines"
+flag_rawData_avgLoad_runningEngines = "AVG Load Pct running engines"
 #endregion
 
 #region standard ship dict
@@ -241,30 +252,34 @@ scatter_FramHeight = 800
 scatter_dotTransparency = 0.85
 scatter_dotSize = 1
 
-plotSFOC_Curves = True
+plotSFOC_Curves = False
 plotSFOC_per_engine_overSpeed = True
 plot_GVU_LNGCharts = True
 
 dict_plotTheseShips = {
     "plot_nova": 1,
-    "plot_smeralda": 0
+    "plot_smeralda": 1
 }
 
 dict_generic_x_signal = {
     "flag_rawData_INS_SPEED_OVER_GROUND_x": 0,
-    "flag_rawData_INS_SPEED_THROUGH_WATER_x": 1
+    "flag_rawData_INS_SPEED_THROUGH_WATER_x": 1,
 }
 
+# >>> UPDATE this function for every new signal
+# def func_getRealFlagNotJustStr
 dict_generic_y_signal = {
-    "flag_rawData_totalSTRSPower": 0,
-    "flag_rawData_total_POD_PWR": 1,
-    "flag_rawData_total_POD_MTR_PRW": 0,
-    "flag_rawData_total_MainEngine_PWR": 1
+    "flag_rawData_totalSTRSPower":          0,
+    "flag_rawData_total_POD_PWR":           0,
+    "flag_rawData_total_POD_MTR_PRW":       0,
+    "flag_rawData_total_MainEngine_PWR":    1,
+    "flag_rawData_avgSFOC_runningEngines":  1,
+    "flag_rawData_avgLoad_runningEngines":  1,
 }
 
 dict_plotTheseGenericGraphs = {
     "plot_signal_overSpeed": 1,
-    "plot_signal_perNMsailed_overSpeed": 1,
+    "plot_signal_perNMsailed_overSpeed": 0,
     "plot_signal_perDollar_perNMSailed_overSpeed": 0
 }
 #endregion
@@ -507,7 +522,7 @@ def func_printSFOC(
     )
 
     citation = Label(
-        x=scatter_FrameWidth - 220, y=5, x_units='screen', y_units='screen',
+        x=scatter_FrameWidth - 200, y=5, x_units='screen', y_units='screen',
         text='TR@CMG 2021', render_mode='css',
         border_line_color='black', border_line_alpha=1.0,
         background_fill_color="#cbe6f5", background_fill_alpha=1.0
@@ -541,29 +556,6 @@ def f_prepareTheScatterFrame(
     return p
 
 ' #####################################################################################################################'
-def func_doTheLoadPercentForThisEngine(
-    thisDF,
-    thisShip,
-    flag_engineLoad_ABS,
-    flag_engineLoad_Pct
-):
-    thisDF[flag_engineLoad_Pct] = 0
-
-    if not func_isThisColumnAvailable(thisDF, thisShip, flag_engineLoad_ABS):
-        return thisDF
-    else:
-        thisDF.loc[
-            (thisDF[flag_engineLoad_ABS] > 500),
-            flag_engineLoad_Pct] = \
-        round(
-            thisDF.loc[
-                (thisDF[flag_engineLoad_ABS] > 100),
-                flag_engineLoad_ABS] / 15440 * 100, 1
-        )
-
-    return thisDF
-
-' #####################################################################################################################'
 def func_getEngineLoadPercent(
     thisDF,
     thisShip
@@ -579,6 +571,32 @@ def func_getEngineLoadPercent(
 
     thisDF = func_doTheLoadPercentForThisEngine(
         thisDF, thisShip, flag_rawData_MV2_DG4_ACTIVE_PWR_kW, flag_rawData_EngineLoadPercent_DG4)
+
+    return thisDF
+
+' #####################################################################################################################'
+def func_doTheLoadPercentForThisEngine(
+    thisDF,
+    thisShip,
+    flag_engineLoad_ABS,
+    flag_engineLoad_Pct
+):
+    # print("\nADDING next load for this engine " + flag_engineLoad_Pct)
+    minEngineLoadForAnyCounting = 250
+
+    thisDF[flag_engineLoad_Pct] = 0
+
+    if not func_isThisColumnAvailable(thisDF, thisShip, flag_engineLoad_ABS):
+        return thisDF
+    else:
+        thisDF.loc[
+            (thisDF[flag_engineLoad_ABS] > minEngineLoadForAnyCounting),
+            flag_engineLoad_Pct] = \
+        round(
+            thisDF.loc[
+                (thisDF[flag_engineLoad_ABS] > minEngineLoadForAnyCounting),
+                flag_engineLoad_ABS] / 15440 * 100, 1
+        )
 
     return thisDF
 
@@ -764,6 +782,68 @@ def func_getAmountOfEnginesRunning(
     return thisDF
 
 ' #####################################################################################################################'
+def func_calcAvgSfocRunningEngines(
+    thisDF,
+    thisShip
+):
+    thisDF[flag_rawData_avgSFOC_runningEngines] = 0
+
+    thisDF.loc[
+        (thisDF[flag_rawData_enginesRunning] > 0),
+        flag_rawData_avgSFOC_runningEngines
+    ] = \
+        (
+            thisDF.loc[
+                (thisDF[flag_rawData_enginesRunning] > 0),
+                flag_rawData_SFOC_LNG_DG1] +
+            thisDF.loc[
+                (thisDF[flag_rawData_enginesRunning] > 0),
+                flag_rawData_SFOC_LNG_DG2] +
+            thisDF.loc[
+                (thisDF[flag_rawData_enginesRunning] > 0),
+                flag_rawData_SFOC_LNG_DG3] +
+            thisDF.loc[
+                (thisDF[flag_rawData_enginesRunning] > 0),
+                flag_rawData_SFOC_LNG_DG4]
+        ) / thisDF.loc[
+            (thisDF[flag_rawData_enginesRunning] > 0),
+            flag_rawData_enginesRunning
+        ]
+
+    return thisDF
+
+' #####################################################################################################################'
+def func_calcAvgLoadRunningEngines(
+    thisDF,
+    thisShip
+):
+    thisDF[flag_rawData_avgLoad_runningEngines] = 0
+
+    thisDF.loc[
+        (thisDF[flag_rawData_enginesRunning] > 0),
+        flag_rawData_avgLoad_runningEngines
+    ] = \
+        (
+            thisDF.loc[
+                (thisDF[flag_rawData_enginesRunning] > 0),
+                flag_rawData_EngineLoadPercent_DG1] +
+            thisDF.loc[
+                (thisDF[flag_rawData_enginesRunning] > 0),
+                flag_rawData_EngineLoadPercent_DG2] +
+            thisDF.loc[
+                (thisDF[flag_rawData_enginesRunning] > 0),
+                flag_rawData_EngineLoadPercent_DG3] +
+            thisDF.loc[
+                (thisDF[flag_rawData_enginesRunning] > 0),
+                flag_rawData_EngineLoadPercent_DG4]
+        ) / thisDF.loc[
+            (thisDF[flag_rawData_enginesRunning] >   0),
+            flag_rawData_enginesRunning
+        ]
+
+    return thisDF
+
+' #####################################################################################################################'
 def func_preCalcSomeFurtherValues(
     df_nova,
     df_smeralda
@@ -774,11 +854,14 @@ def func_preCalcSomeFurtherValues(
     df_nova = func_calc_LNG_SFOC(df_nova, dict_ships["ship_nova"])
     df_smeralda = func_calc_LNG_SFOC(df_smeralda, dict_ships["ship_smeralda"])
 
-    # df_nova = func_calcAbsoluteConsumptionFigures(df_nova, dict_ships["ship_nova"])
-    # df_smeralda = func_calcAbsoluteConsumptionFigures(df_smeralda, dict_ships["ship_smeralda"])
-
     df_nova = func_getAmountOfEnginesRunning(df_nova, dict_ships["ship_nova"])
     df_smeralda = func_getAmountOfEnginesRunning(df_smeralda, dict_ships["ship_smeralda"])
+
+    df_nova = func_calcAvgSfocRunningEngines(df_nova, dict_ships["ship_nova"])
+    df_smeralda = func_calcAvgSfocRunningEngines(df_smeralda, dict_ships["ship_smeralda"])
+
+    df_nova = func_calcAvgLoadRunningEngines(df_nova, dict_ships["ship_nova"])
+    df_smeralda = func_calcAvgLoadRunningEngines(df_smeralda, dict_ships["ship_smeralda"])
 
     #region flag_rawData_totalSTRSPower
     df_nova = func_addNewSumColumnWithTotal(
@@ -871,8 +954,10 @@ def func_getSignalName(
         return "TOTAL ME PWR [MW]"
 
     if y_signal == flag_rawData_total_LNG_GVU_Flow:
-        return "TOTAL LNG GVU FLOW [MT]"
+        return "TOTAL LNG GVU FLOW [kg]"
 
+    if y_signal == flag_rawData_avgLoad_runningEngines:
+        return "AVG Load running engines [%]"
 
     return "SIGNAL not defined"
 
@@ -889,13 +974,13 @@ def func_getSignalNameAppendix(
 def func_get_x_axisLabel(
     xSignal
 ):
-    if xSignal == dict_generic_x_signal["flag_rawData_INS_SPEED_OVER_GROUND_x"]:
+    if xSignal == flag_rawData_INS_SPEED_OVER_GROUND_x:
         return "SOG [kn]"
 
-    if xSignal == dict_generic_x_signal["flag_rawData_INS_SPEED_THROUGH_WATER_x"]:
+    if xSignal == flag_rawData_INS_SPEED_THROUGH_WATER_x:
         return "STW [kn]"
 
-    return "y label not defined"
+    return "x label not defined"
 
 ' #####################################################################################################################'
 def func_get_y_axisLabel(
@@ -936,13 +1021,13 @@ def func_plotGenericGraphs(
         convertSignalIntoDollar = False
         signalNameAppendix = func_getSignalNameAppendix(plotData_PWR_per_NM)
 
-        x_axisLabel = func_get_x_axisLabel(generic_y_signal)
+        x_axisLabel = func_get_x_axisLabel(generic_x_signal)
         y_axisLabel = func_get_y_axisLabel(powerSignal_NAME, plotData_PWR_per_NM, signalNameAppendix, convertSignalIntoDollar)
 
         if dict_plotTheseShips["plot_nova"]:
             func_createSimpleScatter(
                 df_nova, dict_ships["ship_nova"],
-                0, 25, 2000, f_roundToUsefulNextTensOfThousands(df_nova[generic_y_signal].max(), 1000),
+                0, 25, 0, f_roundToUsefulNextTensOfThousands(df_nova[generic_y_signal].max(), 1000),
                 powerSignal_NAME + signalNameAppendix, scatter_dotTransparency, scatter_dotSize,
                 generic_x_signal, generic_y_signal,
                 x_axisLabel, y_axisLabel, plotDataEngineWise, 0, plotData_PWR_per_NM, convertSignalIntoDollar
@@ -951,7 +1036,7 @@ def func_plotGenericGraphs(
         if dict_plotTheseShips["plot_smeralda"]:
             func_createSimpleScatter(
                 df_smeralda, dict_ships["ship_smeralda"],
-                0, 25, 2000, f_roundToUsefulNextTensOfThousands(df_smeralda[generic_y_signal].max(), 1000),
+                0, 25, 0, f_roundToUsefulNextTensOfThousands(df_smeralda[generic_y_signal].max(), 1000),
                 powerSignal_NAME + signalNameAppendix, scatter_dotTransparency, scatter_dotSize,
                 generic_x_signal, generic_y_signal,
                 x_axisLabel, y_axisLabel, plotDataEngineWise, 0, plotData_PWR_per_NM, convertSignalIntoDollar
@@ -965,7 +1050,7 @@ def func_plotGenericGraphs(
 
         signalNameAppendix = func_getSignalNameAppendix(plotData_PWR_per_NM)
 
-        x_axisLabel = func_get_x_axisLabel(generic_y_signal)
+        x_axisLabel = func_get_x_axisLabel(generic_x_signal)
         y_axisLabel = func_get_y_axisLabel(powerSignal_NAME, plotData_PWR_per_NM, signalNameAppendix, convertSignalIntoDollar)
 
         if dict_plotTheseShips["plot_nova"]:
@@ -994,7 +1079,7 @@ def func_plotGenericGraphs(
 
         signalNameAppendix = func_getSignalNameAppendix(plotData_PWR_per_NM)
 
-        x_axisLabel = func_get_x_axisLabel(generic_y_signal)
+        x_axisLabel = func_get_x_axisLabel(generic_x_signal)
         y_axisLabel = func_get_y_axisLabel(powerSignal_NAME, plotData_PWR_per_NM, signalNameAppendix, convertSignalIntoDollar)
 
         if dict_plotTheseShips["plot_nova"]:
@@ -1122,6 +1207,12 @@ def func_getRealFlagNotJustStr(genericSignal):
     if genericSignal == "flag_rawData_total_MainEngine_PWR":
         return flag_rawData_total_MainEngine_PWR
 
+    if genericSignal == "flag_rawData_avgSFOC_runningEngines":
+        return flag_rawData_avgSFOC_runningEngines
+
+    if genericSignal == "flag_rawData_avgLoad_runningEngines":
+        return flag_rawData_avgLoad_runningEngines
+
 ' #####################################################################################################################'
 def func_readGenericSignal(
     generic_x_signal,
@@ -1131,6 +1222,7 @@ def func_readGenericSignal(
     for thisSignal in dict_generic_x_signal:
         if dict_generic_x_signal[thisSignal]:
             generic_x_signal = thisSignal
+            print("use this generic_x_signal " + generic_x_signal)
             generic_x_signal = func_getRealFlagNotJustStr(generic_x_signal)
             break
 
@@ -1140,6 +1232,7 @@ def func_readGenericSignal(
             subSignalCount+=1
             if subSignalCount == thisSignalNumberInDict:
                 generic_y_signal = thisSignal
+                print("use this generic_y_signal " + generic_y_signal)
                 generic_y_signal = func_getRealFlagNotJustStr(generic_y_signal)
                 break
 
@@ -1157,6 +1250,37 @@ def func_check_Y_signalAmount():
     return signalCount
 
 ' #####################################################################################################################'
+def func_exportFiles(
+    df_nova,
+    df_smeralda
+):
+    if dict_exportFiles["export_nova"]:
+        df_nova.to_csv("df_nova.csv", sep=";", decimal=".")
+
+    if dict_exportFiles["export_smeralda"]:
+        df_smeralda.to_csv("df_smeralda.csv", sep=";", decimal=".")
+
+' #####################################################################################################################'
+def func_filterRawData(
+    df_nova,
+    df_smeralda
+):
+    if dict_filterRawData["filter_trueWind"]:
+        if func_isThisColumnAvailable(df_nova, dict_ships["ship_nova"], flag_rawData_INS_TRUE_WINDSPEED_x):
+            print(dict_ships["ship_nova"] + " len df before wind filter " + str(df_nova.shape[0]))
+            df_nova = df_nova[abs(df_nova[flag_rawData_INS_TRUE_WINDSPEED_x]) <= maxTrueWindValue]
+            df_nova.reset_index(drop=True)
+            print("len df after wind filter " + str(df_nova.shape[0]))
+
+        if func_isThisColumnAvailable(df_smeralda, dict_ships["ship_smeralda"], flag_rawData_INS_TRUE_WINDSPEED_x):
+            print(dict_ships["ship_smeralda"] + " len df before wind filter " + str(df_smeralda.shape[0]))
+            df_smeralda = df_smeralda[abs(df_smeralda[flag_rawData_INS_TRUE_WINDSPEED_x]) <= maxTrueWindValue]
+            df_smeralda.reset_index(drop=True)
+            print("len df after wind filter " + str(df_nova.shape[0]))
+
+    return df_nova, df_smeralda
+
+' #####################################################################################################################'
 ' #####################################################################################################################'
 ' #####################################################################################################################'
 
@@ -1168,6 +1292,8 @@ df_smeralda = pd.DataFrame()
 
 df_nova = f_readAllFilesInSubfolders(df_nova, dict_readTheseSubFiles_nova, dict_ships["ship_nova"])
 df_smeralda = f_readAllFilesInSubfolders(df_smeralda, dict_readTheseSubFiles_smeralda, dict_ships["ship_smeralda"])
+
+df_nova, df_smeralda = func_filterRawData(df_nova, df_smeralda)
 
 if redoFlagStructure:
     for thisColumn in df_nova.columns:
@@ -1191,6 +1317,4 @@ if activatedGenericSignals > 0:
 
 func_plot_GVU_Charts(df_nova, df_smeralda)
 
-if exportFinalFiles:
-    df_nova.to_csv("df_nova.csv", sep = ";", decimal = ".")
-    df_smeralda.to_csv("df_smeralda.csv", sep = ";", decimal = ".")
+func_exportFiles(df_nova, df_smeralda)
