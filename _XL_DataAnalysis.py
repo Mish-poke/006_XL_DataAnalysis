@@ -2,6 +2,7 @@ import pandas as pd
 
 from tkinter import *
 import os
+import math
 
 from bokeh.plotting import figure, show, output_file
 from bokeh.models import LinearAxis, ColumnDataSource, Range1d, LabelSet, Label, TableColumn, DataTable
@@ -9,6 +10,7 @@ from bokeh.models import LinearAxis, ColumnDataSource, Range1d, LabelSet, Label,
 redoFlagStructure = False
 exportFinalFiles = False
 
+useDarkScatter = True
 scatter_FrameWidth = 1200
 scatter_FramHeight = 800
 
@@ -34,7 +36,7 @@ dict_readTheseSubFiles_nova = {
     '_ FINE nova ALL FCU HEATER per FZ':        0,
     '_ FINE nova ALL GSP BTR PRW':              0,
     '_ FINE nova ALL GSP POD AUX PWR':          0,
-    '_ FINE nova ALL GSP POD TOT PWR':          0,
+    '_ FINE nova ALL GSP POD TOT PWR':              1,
     '_ FINE nova ALL GSP TSC GVR VENT':         0,
     '_ FINE nova ALL GVU FLOW ME':                  1,
     '_ FINE nova ALL GVU TEMP':                     1,
@@ -82,9 +84,9 @@ dict_readTheseSubFiles_smeralda = {
     '_ FINE smeralda ALL FCU HEATER per FZ':        0,
     '_ FINE smeralda ALL GSP BTR PRW':              0,
     '_ FINE smeralda ALL GSP POD AUX PWR':          0,
-    '_ FINE smeralda ALL GSP POD TOT PWR':          0,
+    '_ FINE smeralda ALL GSP POD TOT PWR':              1,
     '_ FINE smeralda ALL GSP TSC GVR VENT':         0,
-    '_ FINE smeralda ALL GVU FLOW ME':                   1,
+    '_ FINE smeralda ALL GVU FLOW ME':                  1,
     '_ FINE smeralda ALL GVU TEMP':                 0,
     '_ FINE smeralda ALL HOTEL PWR per FZ':         0,
     '_ FINE smeralda ALL HVAC AHU per FZ':          0,
@@ -95,10 +97,10 @@ dict_readTheseSubFiles_smeralda = {
     '_ FINE smeralda ALL LT CIRC PUMP PWR':         0,
     '_ FINE smeralda ALL ME PWR STRANGE SIGNAL':    0,
     '_ FINE smeralda ALL ME Reactive PWR':          0,
-    '_ FINE smeralda ALL NAV Signals':                   1,
+    '_ FINE smeralda ALL NAV Signals':                  1,
     '_ FINE smeralda ALL POD CAU FAN PWR':          0,
-    '_ FINE smeralda ALL POD PROP MTR PWR':              1,
-    '_ FINE smeralda ALL POD PWR':                       1,
+    '_ FINE smeralda ALL POD PROP MTR PWR':             1,
+    '_ FINE smeralda ALL POD PWR':                      1,
     '_ FINE smeralda ALL Pools Jaccuzzies':         0,
     '_ FINE smeralda ALL RF PWR':                   0,
     '_ FINE smeralda ALL RMU per FZ':               0,
@@ -191,10 +193,23 @@ flag_rawData_SFOC_LNG_DG2 = "SFOC_LNG_DG2"
 flag_rawData_SFOC_LNG_DG3 = "SFOC_LNG_DG3"
 flag_rawData_SFOC_LNG_DG4 = "SFOC_LNG_DG4"
 
+flag_rawData_DG1_LNG_absoluteConsumptionPerHour = "DG1 LNG MT/hour this sample"
+flag_rawData_DG2_LNG_absoluteConsumptionPerHour = "DG2 LNG MT/hour this sample"
+flag_rawData_DG3_LNG_absoluteConsumptionPerHour = "DG3 LNG MT/hour this sample"
+flag_rawData_DG4_LNG_absoluteConsumptionPerHour = "DG4 LNG MT/hour this sample"
+
 flag_rawData_EngineLoadPercent_DG1 = "DG1 load percent"
 flag_rawData_EngineLoadPercent_DG2 = "DG1 load percent"
 flag_rawData_EngineLoadPercent_DG3 = "DG1 load percent"
 flag_rawData_EngineLoadPercent_DG4 = "DG1 load percent"
+
+flag_rawData_enginesRunning = "DGs running"
+
+flag_rawData_totalSTRSPower = "STRS TOTAL PWR"
+flag_rawData_total_MainEngine_PWR = "Total Main Engine PWR"
+flag_rawData_total_POD_PWR = "Total PROP PWR"
+flag_rawData_total_POD_MTR_PRW = "Total POD MTR PWR"
+flag_rawData_total_LNG_GVU_Flow = "TOTAL LNG FLOW"
 #endregion
 
 dict_ships = {
@@ -203,15 +218,17 @@ dict_ships = {
 }
 
 dict_colorsForScatter = {
-    1: '#7e59eb', #'#8ddbbc',
-    2: '#8f455f',
-    3: '#0b963c',
-    4: '#b33d0e',
-    5: '#24c9c9',
-    6: '#bf370d',
-    7: '#33babf',
-    8: '#7e59eb',
-    9: '#8f455f'
+    1: '#4674e0', #'#8ddbbc',
+    2: '#9666e3',
+    3: '#b3d453',
+    4: '#f2639c'
+}
+
+dict_colorsForScatter_Dark = {
+    1: '#475423', #'#8ddbbc',
+    2: '#294996',
+    3: '#923fb5',
+    4: '#6e1a3c'
 }
 
 ' #####################################################################################################################'
@@ -348,7 +365,7 @@ def func_SFOC_ThisEngine(
     flag_GVU_Flow,
     flag_DGx_ACTIVE_PWR_kW
 ):
-    print("LNG SOFC for " + thisShip + " and engine " + flag_SFOC)
+    print("LNG SFOC for " + thisShip + " and engine " + flag_SFOC)
 
     thisDF[flag_SFOC] = 0
 
@@ -362,6 +379,14 @@ def func_SFOC_ThisEngine(
         thisDF, flag_SFOC, flag_GVU_Flow, flag_DGx_ACTIVE_PWR_kW)
 
     return thisDF
+
+' #####################################################################################################################'
+def func_getScatterColor():
+    dictColors = dict_colorsForScatter
+    if useDarkScatter:
+        dictColors = dict_colorsForScatter_Dark
+
+    return dictColors
 
 ' #####################################################################################################################'
 def f_doTheSFOC(
@@ -387,25 +412,54 @@ def f_doTheSFOC(
     return thisDF
 
 ' #####################################################################################################################'
-def func_printSFOC(
-    thisDF,
-    thisShip
+def func_plotThisEnginesSFOC(
+    thisDF, thisShip, scatterFrame_rawDataOverTime,
+    flag_loadPercent, flag_engineSFOC, engineCount
 ):
     scatter_dotTransparency = 0.85
     scatter_dotSize = 1
 
+    dictColors = func_getScatterColor()
+
+    scatterFrame_rawDataOverTime.circle(
+        thisDF[thisDF[flag_engineSFOC] > 100][flag_loadPercent],
+        thisDF[thisDF[flag_engineSFOC] > 100][flag_engineSFOC],
+        size=scatter_dotSize, color=dictColors[engineCount],
+        alpha=scatter_dotTransparency,
+        legend_label=thisShip + " SFOC DG" + str(engineCount)
+    )
+
+    return scatterFrame_rawDataOverTime
+
+' #####################################################################################################################'
+def func_printSFOC(
+    thisDF,
+    thisShip
+):
     scatterFrame_rawDataOverTime = f_prepareTheScatterFrame(
             scatter_FrameWidth, scatter_FramHeight, (0, 100),
-            (0, 300),
+            (100, 260),
             str(thisShip + " SFOC LNG per engine")
         )
 
-    scatterFrame_rawDataOverTime.circle(
-        thisDF[thisDF[flag_rawData_SFOC_LNG_DG1] > 100][flag_rawData_EngineLoadPercent_DG1],
-        thisDF[thisDF[flag_rawData_SFOC_LNG_DG1] > 100][flag_rawData_SFOC_LNG_DG1],
-        size=scatter_dotSize, color=dict_colorsForScatter[1],
-        alpha=scatter_dotTransparency,
-        legend_label=thisShip + " SFOC DG1"
+    scatterFrame_rawDataOverTime = func_plotThisEnginesSFOC(
+        thisDF, thisShip, scatterFrame_rawDataOverTime,
+        flag_rawData_EngineLoadPercent_DG1, flag_rawData_SFOC_LNG_DG1, 1
+    )
+
+    scatterFrame_rawDataOverTime = func_plotThisEnginesSFOC(
+        thisDF, thisShip, scatterFrame_rawDataOverTime,
+        flag_rawData_EngineLoadPercent_DG2, flag_rawData_SFOC_LNG_DG2, 2
+    )
+
+    scatterFrame_rawDataOverTime = func_plotThisEnginesSFOC(
+        thisDF, thisShip, scatterFrame_rawDataOverTime,
+        flag_rawData_EngineLoadPercent_DG3, flag_rawData_SFOC_LNG_DG3, 3
+    )
+
+    scatterFrame_rawDataOverTime = func_plotThisEnginesSFOC(
+        thisDF, thisShip, scatterFrame_rawDataOverTime,
+        flag_rawData_EngineLoadPercent_DG4, flag_rawData_SFOC_LNG_DG4, 4
     )
 
     thisFileName = thisShip + " SFOC LNG per engine"
@@ -425,7 +479,7 @@ def func_printSFOC(
 
     scatterFrame_rawDataOverTime.legend.click_policy = "hide"
 
-    scatterFrame_rawDataOverTime.xaxis.axis_label = "TIME"
+    scatterFrame_rawDataOverTime.xaxis.axis_label = "ENGINE LOAD [%]"
     scatterFrame_rawDataOverTime.yaxis.axis_label = "SFOC g/kWh"
 
     scatterFrame_rawDataOverTime.add_layout(citation)
@@ -460,7 +514,7 @@ def func_doTheLoadPercentForThisEngine(
         return thisDF
     else:
         thisDF.loc[
-            (thisDF[flag_engineLoad_ABS] > 100),
+            (thisDF[flag_engineLoad_ABS] > 500),
             flag_engineLoad_Pct] = \
         round(
             thisDF.loc[
@@ -490,6 +544,467 @@ def func_getEngineLoadPercent(
     return thisDF
 
 ' #####################################################################################################################'
+def func_getSubFlag(
+    flag,
+    flagSubDataToBeSummedUp_1,
+    flagSubDataToBeSummedUp_2,
+    flagSubDataToBeSummedUp_3,
+    flagSubDataToBeSummedUp_4
+):
+    if flag == 1:
+        return  flagSubDataToBeSummedUp_1
+
+    if flag == 2:
+        return flagSubDataToBeSummedUp_2
+
+    if flag == 3:
+        return flagSubDataToBeSummedUp_3
+
+    return flagSubDataToBeSummedUp_4
+
+' #####################################################################################################################'
+def func_addNewSumColumnWithTotal(
+    thisDF,
+    thisShip,
+    newFlag,
+    flagSubDataToBeSummedUp_1,
+    flagSubDataToBeSummedUp_2,
+    flagSubDataToBeSummedUp_3 = "",
+    flagSubDataToBeSummedUp_4 = ""
+):
+    thisDF[newFlag] = 0
+
+    cntFlag = 1
+    while cntFlag <= 4:
+        subFlag = func_getSubFlag(
+            cntFlag,
+            flagSubDataToBeSummedUp_1, flagSubDataToBeSummedUp_2,
+            flagSubDataToBeSummedUp_3, flagSubDataToBeSummedUp_4)
+
+        if subFlag in thisDF.columns.unique():
+            thisDF[newFlag] = \
+                thisDF[newFlag] + \
+                thisDF[subFlag]
+
+        cntFlag+=1
+
+    print(thisShip + " mean "+newFlag+" = " + str(thisDF[newFlag].mean()))
+
+    return thisDF
+
+' #####################################################################################################################'
+def func_addConvertedColumn(
+    thisDF,
+    flag_ySignal,
+    flag_xSignalToBeUsedAsDivider,
+    flag_newNameYSignal
+):
+    thisDF[flag_newNameYSignal] = 0
+
+    thisDF.loc[
+        (thisDF[flag_xSignalToBeUsedAsDivider] > 0),
+        flag_newNameYSignal] = \
+    thisDF.loc[
+        (thisDF[flag_xSignalToBeUsedAsDivider] > 0),
+        flag_ySignal] / \
+    thisDF.loc[
+        (thisDF[flag_xSignalToBeUsedAsDivider] > 0),
+        flag_xSignalToBeUsedAsDivider]
+
+    return thisDF
+
+' #####################################################################################################################'
+def func_createSimpleScatter(
+    thisDF,
+    thisShip,
+    min_x, max_x,
+    min_y, max_y,
+    graph_name,
+    scatter_dotTransparency,
+    scatter_dotSize,
+    flag_xSignal,
+    flag_ySignal,
+    x_axisLabel,
+    y_axisLabel,
+    plotDataByAmountOfEnginesRunning = False,
+    minSpeedToBeFilteredFor = 0,
+    convert_y_into_value_per_NM = False,
+    convert_MW_intoMTUsingCorrectSFOC = False
+):
+    scatterFrame_rawDataOverTime = f_prepareTheScatterFrame(
+        scatter_FrameWidth, scatter_FramHeight,
+        (min_x, max_x),
+        (min_y, max_y),
+        str(thisShip + graph_name)
+    )
+
+    dictColors = func_getScatterColor()
+
+    if convert_y_into_value_per_NM:
+        flag_newNameYSignal = "MW/NM"
+        thisDF = func_addConvertedColumn(thisDF, flag_ySignal, flag_rawData_INS_SPEED_THROUGH_WATER_x, flag_newNameYSignal)
+        flag_ySignal = flag_newNameYSignal
+
+    if plotDataByAmountOfEnginesRunning:
+        thisEngine = 1
+        while thisEngine <= 4:
+            scatterFrame_rawDataOverTime.circle(
+                thisDF[
+                    (thisDF[flag_rawData_enginesRunning] == thisEngine) &
+                    (thisDF[flag_rawData_INS_SPEED_THROUGH_WATER_x] >= minSpeedToBeFilteredFor)][flag_xSignal],
+                thisDF[
+                    (thisDF[flag_rawData_enginesRunning] == thisEngine) &
+                    (thisDF[flag_rawData_INS_SPEED_THROUGH_WATER_x] >= minSpeedToBeFilteredFor)][flag_ySignal],
+                size=scatter_dotSize, color=dictColors[thisEngine],
+                alpha=scatter_dotTransparency,
+                legend_label = thisShip + graph_name + " " + str(thisEngine) +"DG running"
+            )
+
+            thisEngine+=1
+    else:
+        scatterFrame_rawDataOverTime.circle(
+            thisDF[flag_xSignal],
+            thisDF[flag_ySignal],
+            size=scatter_dotSize, color=dictColors[1],
+            alpha=scatter_dotTransparency,
+            legend_label = thisShip + graph_name
+        )
+
+    thisFileName = thisShip + graph_name
+    output_file(thisFileName + '.html',  # dict_subFolderName["subfolder_exportGraphs"] + "/"
+                title=thisFileName + '.py example'
+                )
+
+    citation = Label(
+        x=scatter_FrameWidth - 220, y=5, x_units='screen', y_units='screen',
+        text='TR@CMG 2021', render_mode='css',
+        border_line_color='black', border_line_alpha=1.0,
+        background_fill_color="#cbe6f5", background_fill_alpha=1.0
+    )
+
+    scatterFrame_rawDataOverTime.legend.location = "top_left"
+    scatterFrame_rawDataOverTime.title.text_font_size = "14px"
+
+    scatterFrame_rawDataOverTime.legend.click_policy = "hide"
+
+    scatterFrame_rawDataOverTime.xaxis.axis_label = x_axisLabel
+    scatterFrame_rawDataOverTime.yaxis.axis_label = y_axisLabel
+
+    scatterFrame_rawDataOverTime.add_layout(citation)
+
+    show(scatterFrame_rawDataOverTime)
+
+' #####################################################################################################################'
+def func_countForThisEngineFlag(
+    thisDF,
+    flag_thisEngineLoad
+):
+    thisDF.loc[
+        (thisDF[flag_thisEngineLoad] > 500),
+        flag_rawData_enginesRunning
+    ] =\
+        thisDF.loc[
+            (thisDF[flag_thisEngineLoad] > 500),
+            flag_rawData_enginesRunning
+        ] + 1
+
+    return thisDF
+
+' #####################################################################################################################'
+def func_getAmountOfEnginesRunning(
+    thisDF,
+    thisShip
+):
+    thisDF[flag_rawData_enginesRunning] = 0
+
+    thisDF = func_countForThisEngineFlag(thisDF, flag_rawData_MV1_DG1_ACTIVE_PWR_kW)
+    thisDF = func_countForThisEngineFlag(thisDF, flag_rawData_MV1_DG2_ACTIVE_PWR_kW)
+    thisDF = func_countForThisEngineFlag(thisDF, flag_rawData_MV2_DG3_ACTIVE_PWR_kW)
+    thisDF = func_countForThisEngineFlag(thisDF, flag_rawData_MV2_DG4_ACTIVE_PWR_kW)
+
+    return thisDF
+
+' #####################################################################################################################'
+def func_preCalcSomeFurtherValues(
+    df_nova,
+    df_smeralda
+):
+    df_nova = func_getEngineLoadPercent(df_nova, dict_ships["ship_nova"])
+    df_smeralda = func_getEngineLoadPercent(df_smeralda, dict_ships["ship_smeralda"])
+
+    df_nova = func_calc_LNG_SFOC(df_nova, dict_ships["ship_nova"])
+    df_smeralda = func_calc_LNG_SFOC(df_smeralda, dict_ships["ship_smeralda"])
+
+    # df_nova = func_calcAbsoluteConsumptionFigures(df_nova, dict_ships["ship_nova"])
+    # df_smeralda = func_calcAbsoluteConsumptionFigures(df_smeralda, dict_ships["ship_smeralda"])
+
+    df_nova = func_getAmountOfEnginesRunning(df_nova, dict_ships["ship_nova"])
+    df_smeralda = func_getAmountOfEnginesRunning(df_smeralda, dict_ships["ship_smeralda"])
+
+    #region flag_rawData_totalSTRSPower
+    df_nova = func_addNewSumColumnWithTotal(
+        df_nova, dict_ships["ship_nova"], flag_rawData_totalSTRSPower,
+        flag_rawData_MV1_S_TRS1_ACTIVE_PWR_kW_x, flag_rawData_MV1_S_TRS2_ACTIVE_PWR_kW_x,
+        flag_rawData_MV2_S_TRS3_ACTIVE_PWR_kW_x, flag_rawData_MV2_S_TRS4_ACTIVE_PWR_kW_x
+    )
+    df_smeralda = func_addNewSumColumnWithTotal(
+        df_smeralda, dict_ships["ship_smeralda"], flag_rawData_totalSTRSPower,
+        flag_rawData_MV1_S_TRS1_ACTIVE_PWR_kW_x, flag_rawData_MV1_S_TRS2_ACTIVE_PWR_kW_x,
+        flag_rawData_MV2_S_TRS3_ACTIVE_PWR_kW_x, flag_rawData_MV2_S_TRS4_ACTIVE_PWR_kW_x
+    )
+    #endregion
+
+    #region flag_rawData_total_MainEngine_PWR
+    df_nova = func_addNewSumColumnWithTotal(
+        df_nova, dict_ships["ship_nova"], flag_rawData_total_MainEngine_PWR,
+        flag_rawData_MV1_DG1_ACTIVE_PWR_kW, flag_rawData_MV1_DG2_ACTIVE_PWR_kW,
+        flag_rawData_MV2_DG3_ACTIVE_PWR_kW, flag_rawData_MV2_DG4_ACTIVE_PWR_kW
+    )
+    df_smeralda = func_addNewSumColumnWithTotal(
+        df_smeralda, dict_ships["ship_smeralda"], flag_rawData_total_MainEngine_PWR,
+        flag_rawData_MV1_DG1_ACTIVE_PWR_kW, flag_rawData_MV1_DG2_ACTIVE_PWR_kW,
+        flag_rawData_MV2_DG3_ACTIVE_PWR_kW, flag_rawData_MV2_DG4_ACTIVE_PWR_kW
+    )
+    #endregion
+
+    # region flag_rawData_total_MainEngine_PWR
+    df_nova = func_addNewSumColumnWithTotal(
+        df_nova, dict_ships["ship_nova"], flag_rawData_total_POD_PWR,
+        flag_rawData_MV1_POD1_ACTIVE_PWR_kW_x, flag_rawData_MV2_POD2_ACTIVE_PWR_kW_x
+    )
+    df_smeralda = func_addNewSumColumnWithTotal(
+        df_smeralda, dict_ships["ship_smeralda"], flag_rawData_total_POD_PWR,
+        flag_rawData_MV1_POD1_ACTIVE_PWR_kW_x, flag_rawData_MV2_POD2_ACTIVE_PWR_kW_x
+    )
+    # endregion
+
+    # region flag_rawData_total_MainEngine_PWR
+    df_nova = func_addNewSumColumnWithTotal(
+        df_nova, dict_ships["ship_nova"], flag_rawData_total_POD_MTR_PRW,
+        flag_rawData_POD1_PROP_ACTUAL_MTR_PWR_x, flag_rawData_POD2_PROP_ACTUAL_MTR_PWR_x
+    )
+    df_smeralda = func_addNewSumColumnWithTotal(
+        df_smeralda, dict_ships["ship_smeralda"], flag_rawData_total_POD_MTR_PRW,
+        flag_rawData_POD1_PROP_ACTUAL_MTR_PWR_x, flag_rawData_POD2_PROP_ACTUAL_MTR_PWR_x
+    )
+    # endregion
+
+    # region flag_rawData_total_LNG_GVU_Flow
+    df_nova = func_addNewSumColumnWithTotal(
+        df_nova, dict_ships["ship_nova"], flag_rawData_total_LNG_GVU_Flow,
+        flag_rawData_ME1_FUEL_GAS_GVU_FLOW_x, flag_rawData_ME2_FUEL_GAS_GVU_FLOW_x,
+        flag_rawData_ME3_FUEL_GAS_GVU_FLOW_x, flag_rawData_ME4_FUEL_GAS_GVU_FLOW_x
+    )
+    df_smeralda = func_addNewSumColumnWithTotal(
+        df_smeralda, dict_ships["ship_smeralda"], flag_rawData_total_LNG_GVU_Flow,
+        flag_rawData_ME1_FUEL_GAS_GVU_FLOW_x, flag_rawData_ME2_FUEL_GAS_GVU_FLOW_x,
+        flag_rawData_ME3_FUEL_GAS_GVU_FLOW_x, flag_rawData_ME4_FUEL_GAS_GVU_FLOW_x
+    )
+    # endregion
+
+    return df_nova, df_smeralda
+
+' #####################################################################################################################'
+def f_roundToUsefulNextTensOfThousands(
+    maxY,
+    scalingFactor
+):
+    print("maxY before ceil up: " + str(maxY))
+    maxY = math.ceil(maxY/(len(str(int(maxY)))*scalingFactor)) * (len(str(int(maxY)))*scalingFactor)
+    print("maxY after ceil up: " + str(maxY))
+
+    return maxY
+
+' #####################################################################################################################'
+def func_getSignalName(
+    y_signal
+):
+    if y_signal == flag_rawData_totalSTRSPower:
+        return "STRS PWR [MW]"
+
+    if y_signal == flag_rawData_total_POD_PWR:
+        return "POD-PROP PWR [MW]"
+
+    if y_signal == flag_rawData_total_MainEngine_PWR:
+        return "TOTAL ME PWR [MW]"
+
+    if y_signal == flag_rawData_total_LNG_GVU_Flow:
+        return "TOTAL LNG GVU FLOW [MT]"
+
+
+    return "SIGNAL not defined"
+
+' #####################################################################################################################'
+def func_getSignalNameAppendix(
+    plotData_PWR_per_NM
+):
+    if plotData_PWR_per_NM:
+        return " per NM sailed"
+
+    return " over speed"
+
+' #####################################################################################################################'
+def func_get_y_axisLabel(
+    powerSignal_NAME,
+    plotData_PWR_per_NM,
+    signalNameAppendix
+):
+    if plotData_PWR_per_NM:
+        return powerSignal_NAME + signalNameAppendix
+
+    return powerSignal_NAME
+
+' #####################################################################################################################'
+def func_plotSomeGraphs(
+    df_nova,
+    df_smeralda
+):
+    scatter_dotTransparency = 0.85
+    scatter_dotSize = 1
+
+    x_signal = flag_rawData_INS_SPEED_THROUGH_WATER_x
+    y_signal = flag_rawData_total_MainEngine_PWR
+
+    powerSignal_NAME = func_getSignalName(y_signal)
+
+    dict_plotTheseShips = {
+        "plot_nova": 1,
+        "plot_smeralda": 1
+    }
+
+    plotDataEngineWise = True
+
+    # region PWR over Speed
+    plotData_PWR_per_NM = False
+    signalNameAppendix = func_getSignalNameAppendix(plotData_PWR_per_NM)
+
+    y_axisLabel = func_get_y_axisLabel(powerSignal_NAME, plotData_PWR_per_NM, signalNameAppendix)
+
+    if dict_plotTheseShips["plot_nova"]:
+        func_createSimpleScatter(
+            df_nova, dict_ships["ship_nova"],
+            0, 25, 2000, f_roundToUsefulNextTensOfThousands(df_nova[y_signal].max(), 1000),
+            powerSignal_NAME + signalNameAppendix, scatter_dotTransparency, scatter_dotSize,
+            x_signal, y_signal,
+            "STW [kn]", y_axisLabel, plotDataEngineWise, 0, plotData_PWR_per_NM
+        )
+
+    if dict_plotTheseShips["plot_smeralda"]:
+        func_createSimpleScatter(
+            df_smeralda, dict_ships["ship_smeralda"],
+            0, 25, 2000, f_roundToUsefulNextTensOfThousands(df_smeralda[y_signal].max(), 1000),
+            powerSignal_NAME + signalNameAppendix, scatter_dotTransparency, scatter_dotSize,
+            x_signal, y_signal,
+            "STW [kn]", y_axisLabel, plotDataEngineWise, 0, plotData_PWR_per_NM
+        )
+    # endregion
+
+    # region PWR relative per NM sailed
+    plotData_PWR_per_NM = True
+    signalNameAppendix = func_getSignalNameAppendix(plotData_PWR_per_NM)
+    y_axisLabel = func_get_y_axisLabel(powerSignal_NAME, plotData_PWR_per_NM, signalNameAppendix)
+
+    if dict_plotTheseShips["plot_nova"]:
+        func_createSimpleScatter(
+            df_nova, dict_ships["ship_nova"],
+            0, 25, 0, f_roundToUsefulNextTensOfThousands(df_nova[y_signal].max(), 100),
+            powerSignal_NAME + signalNameAppendix, scatter_dotTransparency, scatter_dotSize,
+            x_signal, y_signal,
+            "STW [kn]", y_axisLabel, plotDataEngineWise, 0, plotData_PWR_per_NM
+        )
+
+    if dict_plotTheseShips["plot_smeralda"]:
+        func_createSimpleScatter(
+            df_smeralda, dict_ships["ship_smeralda"],
+            0, 25, 0, f_roundToUsefulNextTensOfThousands(df_smeralda[y_signal].max(), 100),
+            powerSignal_NAME + signalNameAppendix, scatter_dotTransparency, scatter_dotSize,
+            x_signal, y_signal,
+            "STW [kn]", y_axisLabel, plotDataEngineWise, 0, plotData_PWR_per_NM
+        )
+    # endregion
+
+    # region PWR in $ relative per NM sailed
+    signalNameAppendix = func_getSignalNameAppendix(plotData_PWR_per_NM)
+    y_axisLabel = func_get_y_axisLabel(powerSignal_NAME, plotData_PWR_per_NM, signalNameAppendix)
+
+    if dict_plotTheseShips["plot_nova"]:
+        func_createSimpleScatter(
+            df_nova, dict_ships["ship_nova"],
+            0, 25, 0, f_roundToUsefulNextTensOfThousands(df_nova[y_signal].max(), 100),
+            powerSignal_NAME + " per NM sailed", scatter_dotTransparency, scatter_dotSize,
+            x_signal, y_signal,
+            "STW [kn]", y_axisLabel, plotDataEngineWise, 0, plotData_PWR_per_NM
+        )
+
+    if dict_plotTheseShips["plot_smeralda"]:
+        func_createSimpleScatter(
+            df_smeralda, dict_ships["ship_smeralda"],
+            0, 25, 0, f_roundToUsefulNextTensOfThousands(df_smeralda[y_signal].max(), 100),
+            powerSignal_NAME + " per NM sailed", scatter_dotTransparency, scatter_dotSize,
+            x_signal, y_signal,
+            "STW [kn]", y_axisLabel, plotDataEngineWise, 0, plotData_PWR_per_NM
+        )
+    # endregion
+
+    # region TOTAL PWR converted in MT relative per NM sailed
+    x_signal = flag_rawData_INS_SPEED_THROUGH_WATER_x
+    y_signal = flag_rawData_total_LNG_GVU_Flow
+    powerSignal_NAME = func_getSignalName(y_signal)
+
+    plotData_PWR_per_NM = False
+
+    signalNameAppendix = func_getSignalNameAppendix(plotData_PWR_per_NM)
+    y_axisLabel = func_get_y_axisLabel(powerSignal_NAME, plotData_PWR_per_NM, signalNameAppendix)
+
+    if dict_plotTheseShips["plot_nova"]:
+        func_createSimpleScatter(
+            df_nova, dict_ships["ship_nova"],
+            0, 25, 0, f_roundToUsefulNextTensOfThousands(df_nova[y_signal].max(), 100),
+            powerSignal_NAME + " over speed", scatter_dotTransparency, scatter_dotSize,
+            x_signal, y_signal,
+            "STW [kn]", y_axisLabel, plotDataEngineWise, 0, plotData_PWR_per_NM
+        )
+
+    if dict_plotTheseShips["plot_smeralda"]:
+        func_createSimpleScatter(
+            df_smeralda, dict_ships["ship_smeralda"],
+            0, 25, 0, f_roundToUsefulNextTensOfThousands(df_smeralda[y_signal].max(), 100),
+            powerSignal_NAME + "per NM sailed", scatter_dotTransparency, scatter_dotSize,
+            x_signal, y_signal,
+            "STW [kn]", y_axisLabel, plotDataEngineWise, 0, plotData_PWR_per_NM
+        )
+    # endregion
+
+    # region TOTAL PWR converted in MT relative per NM sailed
+    x_signal = flag_rawData_INS_SPEED_THROUGH_WATER_x
+    y_signal = flag_rawData_total_LNG_GVU_Flow
+    powerSignal_NAME = func_getSignalName(y_signal)
+
+    plotData_PWR_per_NM = True
+
+    signalNameAppendix = func_getSignalNameAppendix(plotData_PWR_per_NM)
+    y_axisLabel = func_get_y_axisLabel(powerSignal_NAME, plotData_PWR_per_NM, signalNameAppendix)
+
+    if dict_plotTheseShips["plot_nova"]:
+        func_createSimpleScatter(
+            df_nova, dict_ships["ship_nova"],
+            0, 25, 0, f_roundToUsefulNextTensOfThousands(df_nova[y_signal].max(), 100),
+            powerSignal_NAME + " per NM sailed", scatter_dotTransparency, scatter_dotSize,
+            x_signal, y_signal,
+            "STW [kn]", y_axisLabel, plotDataEngineWise, 0, plotData_PWR_per_NM
+        )
+
+    if dict_plotTheseShips["plot_smeralda"]:
+        func_createSimpleScatter(
+            df_smeralda, dict_ships["ship_smeralda"],
+            0, 25, 0, f_roundToUsefulNextTensOfThousands(df_smeralda[y_signal].max(), 100),
+            powerSignal_NAME + "per NM sailed", scatter_dotTransparency, scatter_dotSize,
+            x_signal, y_signal,
+            "STW [kn]", y_axisLabel, plotDataEngineWise, 0, plotData_PWR_per_NM
+        )
+    # endregion
+
+' #####################################################################################################################'
 ' #####################################################################################################################'
 ' #####################################################################################################################'
 
@@ -503,16 +1018,12 @@ if redoFlagStructure:
     for thisColumn in df_nova.columns:
         print("flag_rawData_" + func_getNameWithoutBlanks(thisColumn)+ " = " + "'" + thisColumn + "'")
 
-df_nova = func_getEngineLoadPercent(df_nova, dict_ships["ship_nova"])
-df_smeralda = func_getEngineLoadPercent(df_smeralda, dict_ships["ship_smeralda"])
-
-df_nova = func_calc_LNG_SFOC(df_nova, dict_ships["ship_nova"])
-df_smeralda = func_calc_LNG_SFOC(df_smeralda, dict_ships["ship_smeralda"])
+df_nova, df_smeralda = func_preCalcSomeFurtherValues(df_nova, df_smeralda)
 
 func_printSFOC(df_nova, dict_ships["ship_nova"])
 func_printSFOC(df_smeralda, dict_ships["ship_smeralda"])
 
-
+func_plotSomeGraphs(df_nova, df_smeralda)
 
 if exportFinalFiles:
     df_nova.to_csv("df_nova.csv", sep = ";", decimal = ".")
