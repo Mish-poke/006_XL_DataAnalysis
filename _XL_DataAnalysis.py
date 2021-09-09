@@ -243,6 +243,7 @@ scatter_dotSize = 1
 
 plotSFOC_Curves = True
 plotSFOC_per_engine_overSpeed = True
+plot_GVU_LNGCharts = True
 
 dict_plotTheseShips = {
     "plot_nova": 1,
@@ -258,7 +259,7 @@ dict_generic_y_signal = {
     "flag_rawData_totalSTRSPower": 0,
     "flag_rawData_total_POD_PWR": 1,
     "flag_rawData_total_POD_MTR_PRW": 0,
-    "flag_rawData_total_MainEngine_PWR": 0
+    "flag_rawData_total_MainEngine_PWR": 1
 }
 
 dict_plotTheseGenericGraphs = {
@@ -885,6 +886,18 @@ def func_getSignalNameAppendix(
     return " over speed"
 
 ' #####################################################################################################################'
+def func_get_x_axisLabel(
+    xSignal
+):
+    if xSignal == dict_generic_x_signal["flag_rawData_INS_SPEED_OVER_GROUND_x"]:
+        return "SOG [kn]"
+
+    if xSignal == dict_generic_x_signal["flag_rawData_INS_SPEED_THROUGH_WATER_x"]:
+        return "STW [kn]"
+
+    return "y label not defined"
+
+' #####################################################################################################################'
 def func_get_y_axisLabel(
     powerSignal_NAME,
     plotData_PWR_per_NM,
@@ -923,6 +936,7 @@ def func_plotGenericGraphs(
         convertSignalIntoDollar = False
         signalNameAppendix = func_getSignalNameAppendix(plotData_PWR_per_NM)
 
+        x_axisLabel = func_get_x_axisLabel(generic_y_signal)
         y_axisLabel = func_get_y_axisLabel(powerSignal_NAME, plotData_PWR_per_NM, signalNameAppendix, convertSignalIntoDollar)
 
         if dict_plotTheseShips["plot_nova"]:
@@ -931,7 +945,7 @@ def func_plotGenericGraphs(
                 0, 25, 2000, f_roundToUsefulNextTensOfThousands(df_nova[generic_y_signal].max(), 1000),
                 powerSignal_NAME + signalNameAppendix, scatter_dotTransparency, scatter_dotSize,
                 generic_x_signal, generic_y_signal,
-                "STW [kn]", y_axisLabel, plotDataEngineWise, 0, plotData_PWR_per_NM, convertSignalIntoDollar
+                x_axisLabel, y_axisLabel, plotDataEngineWise, 0, plotData_PWR_per_NM, convertSignalIntoDollar
             )
 
         if dict_plotTheseShips["plot_smeralda"]:
@@ -940,7 +954,7 @@ def func_plotGenericGraphs(
                 0, 25, 2000, f_roundToUsefulNextTensOfThousands(df_smeralda[generic_y_signal].max(), 1000),
                 powerSignal_NAME + signalNameAppendix, scatter_dotTransparency, scatter_dotSize,
                 generic_x_signal, generic_y_signal,
-                "STW [kn]", y_axisLabel, plotDataEngineWise, 0, plotData_PWR_per_NM, convertSignalIntoDollar
+                x_axisLabel, y_axisLabel, plotDataEngineWise, 0, plotData_PWR_per_NM, convertSignalIntoDollar
             )
     # endregion
 
@@ -950,6 +964,8 @@ def func_plotGenericGraphs(
         convertSignalIntoDollar = False
 
         signalNameAppendix = func_getSignalNameAppendix(plotData_PWR_per_NM)
+
+        x_axisLabel = func_get_x_axisLabel(generic_y_signal)
         y_axisLabel = func_get_y_axisLabel(powerSignal_NAME, plotData_PWR_per_NM, signalNameAppendix, convertSignalIntoDollar)
 
         if dict_plotTheseShips["plot_nova"]:
@@ -958,7 +974,7 @@ def func_plotGenericGraphs(
                 0, 25, 0, f_roundToUsefulNextTensOfThousands(df_nova[generic_y_signal].max(), 100),
                 powerSignal_NAME + signalNameAppendix, scatter_dotTransparency, scatter_dotSize,
                 generic_x_signal, generic_y_signal,
-                "STW [kn]", y_axisLabel, plotDataEngineWise, 0, plotData_PWR_per_NM, convertSignalIntoDollar
+                x_axisLabel, y_axisLabel, plotDataEngineWise, 0, plotData_PWR_per_NM, convertSignalIntoDollar
             )
 
         if dict_plotTheseShips["plot_smeralda"]:
@@ -967,7 +983,7 @@ def func_plotGenericGraphs(
                 0, 25, 0, f_roundToUsefulNextTensOfThousands(df_smeralda[generic_y_signal].max(), 100),
                 powerSignal_NAME + signalNameAppendix, scatter_dotTransparency, scatter_dotSize,
                 generic_x_signal, generic_y_signal,
-                "STW [kn]", y_axisLabel, plotDataEngineWise, 0, plotData_PWR_per_NM, convertSignalIntoDollar
+                x_axisLabel, y_axisLabel, plotDataEngineWise, 0, plotData_PWR_per_NM, convertSignalIntoDollar
             )
     # endregion
 
@@ -977,6 +993,8 @@ def func_plotGenericGraphs(
         convertSignalIntoDollar = True
 
         signalNameAppendix = func_getSignalNameAppendix(plotData_PWR_per_NM)
+
+        x_axisLabel = func_get_x_axisLabel(generic_y_signal)
         y_axisLabel = func_get_y_axisLabel(powerSignal_NAME, plotData_PWR_per_NM, signalNameAppendix, convertSignalIntoDollar)
 
         if dict_plotTheseShips["plot_nova"]:
@@ -985,7 +1003,7 @@ def func_plotGenericGraphs(
                 0, 25, 0, f_roundToUsefulNextTensOfThousands(df_nova[generic_y_signal].max(), 100),
                 powerSignal_NAME + " per NM sailed", scatter_dotTransparency, scatter_dotSize,
                 generic_x_signal, generic_y_signal,
-                "STW [kn]", y_axisLabel, plotDataEngineWise, 0, plotData_PWR_per_NM, convertSignalIntoDollar
+                x_axisLabel, y_axisLabel, plotDataEngineWise, 0, plotData_PWR_per_NM, convertSignalIntoDollar
             )
 
         if dict_plotTheseShips["plot_smeralda"]:
@@ -994,69 +1012,86 @@ def func_plotGenericGraphs(
                 0, 25, 0, f_roundToUsefulNextTensOfThousands(df_smeralda[generic_y_signal].max(), 100),
                 powerSignal_NAME + " per NM sailed", scatter_dotTransparency, scatter_dotSize,
                 generic_x_signal, generic_y_signal,
-                "STW [kn]", y_axisLabel, plotDataEngineWise, 0, plotData_PWR_per_NM, convertSignalIntoDollar
+                x_axisLabel, y_axisLabel, plotDataEngineWise, 0, plotData_PWR_per_NM, convertSignalIntoDollar
             )
     # endregion
-    #
-    # # region TOTAL GVU over Speed
-    # generic_x_signal = flag_rawData_INS_SPEED_THROUGH_WATER_x
-    # generic_y_signal = flag_rawData_total_LNG_GVU_Flow
-    # powerSignal_NAME = func_getSignalName(generic_y_signal)
-    #
-    # plotData_PWR_per_NM = False
-    # convertSignalIntoDollar = False
-    #
-    # signalNameAppendix = func_getSignalNameAppendix(plotData_PWR_per_NM)
-    # y_axisLabel = func_get_y_axisLabel(powerSignal_NAME, plotData_PWR_per_NM, signalNameAppendix, convertSignalIntoDollar)
-    #
-    # if dict_plotTheseShips["plot_nova"]:
-    #     func_createSimpleScatter(
-    #         df_nova, dict_ships["ship_nova"],
-    #         0, 25, 0, f_roundToUsefulNextTensOfThousands(df_nova[generic_y_signal].max(), 100),
-    #         powerSignal_NAME + " over speed", scatter_dotTransparency, scatter_dotSize,
-    #         generic_x_signal, generic_y_signal,
-    #         "STW [kn]", y_axisLabel, plotDataEngineWise, 0, plotData_PWR_per_NM, convertSignalIntoDollar
-    #     )
-    #
-    # if dict_plotTheseShips["plot_smeralda"]:
-    #     func_createSimpleScatter(
-    #         df_smeralda, dict_ships["ship_smeralda"],
-    #         0, 25, 0, f_roundToUsefulNextTensOfThousands(df_smeralda[generic_y_signal].max(), 100),
-    #         powerSignal_NAME + "per NM sailed", scatter_dotTransparency, scatter_dotSize,
-    #         generic_x_signal, generic_y_signal,
-    #         "STW [kn]", y_axisLabel, plotDataEngineWise, 0, plotData_PWR_per_NM, convertSignalIntoDollar
-    #     )
-    # # endregion
-    #
-    # # region TOTAL GVU relative per NM sailed
-    # generic_x_signal = flag_rawData_INS_SPEED_THROUGH_WATER_x
-    # generic_y_signal = flag_rawData_total_LNG_GVU_Flow
-    # powerSignal_NAME = func_getSignalName(generic_y_signal)
-    #
-    # plotData_PWR_per_NM = True
-    # convertSignalIntoDollar = False
-    #
-    # signalNameAppendix = func_getSignalNameAppendix(plotData_PWR_per_NM)
-    # y_axisLabel = func_get_y_axisLabel(powerSignal_NAME, plotData_PWR_per_NM, signalNameAppendix, convertSignalIntoDollar)
-    #
-    # if dict_plotTheseShips["plot_nova"]:
-    #     func_createSimpleScatter(
-    #         df_nova, dict_ships["ship_nova"],
-    #         0, 25, 0, f_roundToUsefulNextTensOfThousands(df_nova[generic_y_signal].max(), 100),
-    #         powerSignal_NAME + " per NM sailed", scatter_dotTransparency, scatter_dotSize,
-    #         generic_x_signal, generic_y_signal,
-    #         "STW [kn]", y_axisLabel, plotDataEngineWise, 0, plotData_PWR_per_NM, convertSignalIntoDollar
-    #     )
-    #
-    # if dict_plotTheseShips["plot_smeralda"]:
-    #     func_createSimpleScatter(
-    #         df_smeralda, dict_ships["ship_smeralda"],
-    #         0, 25, 0, f_roundToUsefulNextTensOfThousands(df_smeralda[generic_y_signal].max(), 100),
-    #         powerSignal_NAME + "per NM sailed", scatter_dotTransparency, scatter_dotSize,
-    #         generic_x_signal, generic_y_signal,
-    #         "STW [kn]", y_axisLabel, plotDataEngineWise, 0, plotData_PWR_per_NM, convertSignalIntoDollar
-    #     )
-    # # endregion
+
+' #####################################################################################################################'
+def func_plot_GVU_Charts(
+    df_nova,
+    df_smeralda
+):
+
+    if not plot_GVU_LNGCharts:
+        return
+
+    # region TOTAL GVU over Speed
+    plotDataEngineWise = True
+    plotData_PWR_per_NM = False
+    convertSignalIntoDollar = False
+
+    generic_x_signal = flag_rawData_INS_SPEED_THROUGH_WATER_x
+    generic_y_signal = flag_rawData_total_LNG_GVU_Flow
+    powerSignal_NAME = func_getSignalName(generic_y_signal)
+
+    plotData_PWR_per_NM = False
+    convertSignalIntoDollar = False
+
+    signalNameAppendix = func_getSignalNameAppendix(plotData_PWR_per_NM)
+    y_axisLabel = func_get_y_axisLabel(powerSignal_NAME, plotData_PWR_per_NM, signalNameAppendix, convertSignalIntoDollar)
+
+    if dict_plotTheseShips["plot_nova"]:
+        func_createSimpleScatter(
+            df_nova, dict_ships["ship_nova"],
+            0, 25, 0, f_roundToUsefulNextTensOfThousands(df_nova[generic_y_signal].max(), 100),
+            powerSignal_NAME + " over speed", scatter_dotTransparency, scatter_dotSize,
+            generic_x_signal, generic_y_signal,
+            "STW [kn]", y_axisLabel, plotDataEngineWise, 0, plotData_PWR_per_NM, convertSignalIntoDollar
+        )
+
+    if dict_plotTheseShips["plot_smeralda"]:
+        func_createSimpleScatter(
+            df_smeralda, dict_ships["ship_smeralda"],
+            0, 25, 0, f_roundToUsefulNextTensOfThousands(df_smeralda[generic_y_signal].max(), 100),
+            powerSignal_NAME + "per NM sailed", scatter_dotTransparency, scatter_dotSize,
+            generic_x_signal, generic_y_signal,
+            "STW [kn]", y_axisLabel, plotDataEngineWise, 0, plotData_PWR_per_NM, convertSignalIntoDollar
+        )
+    # endregion
+
+    # region TOTAL GVU relative per NM sailed
+    plotDataEngineWise = True
+    plotData_PWR_per_NM = True
+    convertSignalIntoDollar = False
+
+    generic_x_signal = flag_rawData_INS_SPEED_THROUGH_WATER_x
+    generic_y_signal = flag_rawData_total_LNG_GVU_Flow
+    powerSignal_NAME = func_getSignalName(generic_y_signal)
+
+    plotData_PWR_per_NM = True
+    convertSignalIntoDollar = False
+
+    signalNameAppendix = func_getSignalNameAppendix(plotData_PWR_per_NM)
+    y_axisLabel = func_get_y_axisLabel(powerSignal_NAME, plotData_PWR_per_NM, signalNameAppendix, convertSignalIntoDollar)
+
+    if dict_plotTheseShips["plot_nova"]:
+        func_createSimpleScatter(
+            df_nova, dict_ships["ship_nova"],
+            0, 25, 0, f_roundToUsefulNextTensOfThousands(df_nova[generic_y_signal].max(), 100),
+            powerSignal_NAME + " per NM sailed", scatter_dotTransparency, scatter_dotSize,
+            generic_x_signal, generic_y_signal,
+            "STW [kn]", y_axisLabel, plotDataEngineWise, 0, plotData_PWR_per_NM, convertSignalIntoDollar
+        )
+
+    if dict_plotTheseShips["plot_smeralda"]:
+        func_createSimpleScatter(
+            df_smeralda, dict_ships["ship_smeralda"],
+            0, 25, 0, f_roundToUsefulNextTensOfThousands(df_smeralda[generic_y_signal].max(), 100),
+            powerSignal_NAME + "per NM sailed", scatter_dotTransparency, scatter_dotSize,
+            generic_x_signal, generic_y_signal,
+            "STW [kn]", y_axisLabel, plotDataEngineWise, 0, plotData_PWR_per_NM, convertSignalIntoDollar
+        )
+    # endregion
 
 ' #####################################################################################################################'
 def func_plotSFOC_Curves():
@@ -1153,6 +1188,8 @@ if activatedGenericSignals > 0:
         func_plotGenericGraphs(df_nova, df_smeralda, generic_x_signal, generic_y_signal)
 
         thisSignal+=1
+
+func_plot_GVU_Charts(df_nova, df_smeralda)
 
 if exportFinalFiles:
     df_nova.to_csv("df_nova.csv", sep = ";", decimal = ".")
