@@ -3,6 +3,7 @@ import pandas as pd
 from tkinter import *
 import os
 import math
+import getpass
 
 from bokeh.plotting import figure, show, output_file
 from bokeh.models import LinearAxis, ColumnDataSource, Range1d, LabelSet, Label, TableColumn, DataTable
@@ -17,7 +18,7 @@ dict_filterRawData = {
     "filter_trueWind": 1
 }
 maxTrueWindValue = 30
-
+#
 #region nova subfolders
 dict_readTheseSubFiles_nova = {
     '_ FINE nova ALL AC PWR':                   0,
@@ -228,10 +229,10 @@ dict_ships = {
 
 #region pre-defined scatter color - light
 dict_colorsForScatter = {
-    1: '#4674e0', #'#8ddbbc',
-    2: '#9666e3',
-    3: '#b3d453',
-    4: '#f2639c'
+    1: '#98b842', #'#8ddbbc',
+    2: '#638aeb',
+    3: '#cf7cf2',
+    4: '#ed5c97'
 }
 #endregion
 
@@ -249,12 +250,12 @@ useDarkScatter = True
 scatter_FrameWidth = 1200
 scatter_FramHeight = 800
 
-scatter_dotTransparency = 0.85
+scatter_dotTransparency = 0.3
 scatter_dotSize = 1
 
-plotSFOC_Curves = False
-plotSFOC_per_engine_overSpeed = True
-plot_GVU_LNGCharts = True
+plotSFOC_Curves = True
+plotSFOC_per_engine_overSpeed = False
+plot_GVU_LNGCharts = False
 
 dict_plotTheseShips = {
     "plot_nova": 1,
@@ -273,13 +274,13 @@ dict_generic_y_signal = {
     "flag_rawData_total_POD_PWR":           0,
     "flag_rawData_total_POD_MTR_PRW":       0,
     "flag_rawData_total_MainEngine_PWR":    1,
-    "flag_rawData_avgSFOC_runningEngines":  1,
-    "flag_rawData_avgLoad_runningEngines":  1,
+    "flag_rawData_avgSFOC_runningEngines":  0,
+    "flag_rawData_avgLoad_runningEngines":  0,
 }
 
 dict_plotTheseGenericGraphs = {
     "plot_signal_overSpeed": 1,
-    "plot_signal_perNMsailed_overSpeed": 0,
+    "plot_signal_perNMsailed_overSpeed": 1,
     "plot_signal_perDollar_perNMSailed_overSpeed": 0
 }
 #endregion
@@ -293,7 +294,11 @@ def f_readAllFilesInSubfolders(
     print("\n#################################################\n#################################################"
           " \nSCAN all files in XL-Class DATA FOLDER and load data for " + shipName)
 
-    folder_location = 'E:\\001_CMG\\HOME\\XL-Class-Automation-Data'
+    if username == "TR@FI_02":
+        folder_location = 'E:\\001_CMG\\HOME\\XL-Class-Automation-Data'
+
+    if username == "500095":
+        folder_location = 'C:\\Users\\500095\\OneDrive - Carnival Corporation\\Desktop\\HOME\\XL-Class-Automation-Data'
 
     subDF = pd.DataFrame()
     list_filesToBeLoaded = []
@@ -470,9 +475,6 @@ def func_plotThisEnginesSFOC(
     thisDF, thisShip, scatterFrame_rawDataOverTime,
     flag_loadPercent, flag_engineSFOC, engineCount
 ):
-    scatter_dotTransparency = 0.85
-    scatter_dotSize = 1
-
     dictColors = func_getScatterColor()
 
     scatterFrame_rawDataOverTime.circle(
@@ -926,11 +928,47 @@ def func_preCalcSomeFurtherValues(
 
     return df_nova, df_smeralda
 
+
+' #####################################################################################################################'
+def f_getBestFitScalingFactor(maxY):
+    scalingFactor = 1
+
+    if maxY < 1:
+        scalingFactor = 1
+
+    if maxY in range(1, 10):
+        scalingFactor = 1
+
+    if maxY in range(10, 100):
+        scalingFactor = 10
+
+    if maxY in range(100, 1000):
+        scalingFactor = 100
+
+    if maxY in range(1000, 10000):
+        scalingFactor = 1000
+
+    if maxY in range(10000, 100000):
+        scalingFactor = 10000
+
+    return scalingFactor
+
 ' #####################################################################################################################'
 def f_roundToUsefulNextTensOfThousands(
     maxY,
-    scalingFactor
+    generic_y_signal
 ):
+    if generic_y_signal == flag_rawData_avgLoad_runningEngines:
+        return 100
+
+    # if generic_y_signal == flag_rawData_total_POD_PWR:
+    #     return 35000
+    #
+    # if generic_y_signal == flag_rawData_total_POD_MTR_PRW:
+    #     return 35000
+
+    scalingFactor = f_getBestFitScalingFactor(maxY)
+
     print("maxY before ceil up: " + str(maxY))
     maxY = math.ceil(maxY/(len(str(int(maxY)))*scalingFactor)) * (len(str(int(maxY)))*scalingFactor)
     print("maxY after ceil up: " + str(maxY))
@@ -1027,7 +1065,7 @@ def func_plotGenericGraphs(
         if dict_plotTheseShips["plot_nova"]:
             func_createSimpleScatter(
                 df_nova, dict_ships["ship_nova"],
-                0, 25, 0, f_roundToUsefulNextTensOfThousands(df_nova[generic_y_signal].max(), 1000),
+                0, 25, 0, f_roundToUsefulNextTensOfThousands(df_nova[generic_y_signal].max(), generic_y_signal),
                 powerSignal_NAME + signalNameAppendix, scatter_dotTransparency, scatter_dotSize,
                 generic_x_signal, generic_y_signal,
                 x_axisLabel, y_axisLabel, plotDataEngineWise, 0, plotData_PWR_per_NM, convertSignalIntoDollar
@@ -1036,7 +1074,7 @@ def func_plotGenericGraphs(
         if dict_plotTheseShips["plot_smeralda"]:
             func_createSimpleScatter(
                 df_smeralda, dict_ships["ship_smeralda"],
-                0, 25, 0, f_roundToUsefulNextTensOfThousands(df_smeralda[generic_y_signal].max(), 1000),
+                0, 25, 0, f_roundToUsefulNextTensOfThousands(df_smeralda[generic_y_signal].max(), generic_y_signal),
                 powerSignal_NAME + signalNameAppendix, scatter_dotTransparency, scatter_dotSize,
                 generic_x_signal, generic_y_signal,
                 x_axisLabel, y_axisLabel, plotDataEngineWise, 0, plotData_PWR_per_NM, convertSignalIntoDollar
@@ -1056,7 +1094,7 @@ def func_plotGenericGraphs(
         if dict_plotTheseShips["plot_nova"]:
             func_createSimpleScatter(
                 df_nova, dict_ships["ship_nova"],
-                0, 25, 0, f_roundToUsefulNextTensOfThousands(df_nova[generic_y_signal].max(), 100),
+                0, 25, 0, f_roundToUsefulNextTensOfThousands(df_nova[generic_y_signal].max(), generic_y_signal),
                 powerSignal_NAME + signalNameAppendix, scatter_dotTransparency, scatter_dotSize,
                 generic_x_signal, generic_y_signal,
                 x_axisLabel, y_axisLabel, plotDataEngineWise, 0, plotData_PWR_per_NM, convertSignalIntoDollar
@@ -1065,7 +1103,7 @@ def func_plotGenericGraphs(
         if dict_plotTheseShips["plot_smeralda"]:
             func_createSimpleScatter(
                 df_smeralda, dict_ships["ship_smeralda"],
-                0, 25, 0, f_roundToUsefulNextTensOfThousands(df_smeralda[generic_y_signal].max(), 100),
+                0, 25, 0, f_roundToUsefulNextTensOfThousands(df_smeralda[generic_y_signal].max(), generic_y_signal),
                 powerSignal_NAME + signalNameAppendix, scatter_dotTransparency, scatter_dotSize,
                 generic_x_signal, generic_y_signal,
                 x_axisLabel, y_axisLabel, plotDataEngineWise, 0, plotData_PWR_per_NM, convertSignalIntoDollar
@@ -1085,7 +1123,7 @@ def func_plotGenericGraphs(
         if dict_plotTheseShips["plot_nova"]:
             func_createSimpleScatter(
                 df_nova, dict_ships["ship_nova"],
-                0, 25, 0, f_roundToUsefulNextTensOfThousands(df_nova[generic_y_signal].max(), 100),
+                0, 25, 0, f_roundToUsefulNextTensOfThousands(df_nova[generic_y_signal].max(), generic_y_signal),
                 powerSignal_NAME + " per NM sailed", scatter_dotTransparency, scatter_dotSize,
                 generic_x_signal, generic_y_signal,
                 x_axisLabel, y_axisLabel, plotDataEngineWise, 0, plotData_PWR_per_NM, convertSignalIntoDollar
@@ -1094,7 +1132,7 @@ def func_plotGenericGraphs(
         if dict_plotTheseShips["plot_smeralda"]:
             func_createSimpleScatter(
                 df_smeralda, dict_ships["ship_smeralda"],
-                0, 25, 0, f_roundToUsefulNextTensOfThousands(df_smeralda[generic_y_signal].max(), 100),
+                0, 25, 0, f_roundToUsefulNextTensOfThousands(df_smeralda[generic_y_signal].max(), generic_y_signal),
                 powerSignal_NAME + " per NM sailed", scatter_dotTransparency, scatter_dotSize,
                 generic_x_signal, generic_y_signal,
                 x_axisLabel, y_axisLabel, plotDataEngineWise, 0, plotData_PWR_per_NM, convertSignalIntoDollar
@@ -1106,7 +1144,6 @@ def func_plot_GVU_Charts(
     df_nova,
     df_smeralda
 ):
-
     if not plot_GVU_LNGCharts:
         return
 
@@ -1128,7 +1165,7 @@ def func_plot_GVU_Charts(
     if dict_plotTheseShips["plot_nova"]:
         func_createSimpleScatter(
             df_nova, dict_ships["ship_nova"],
-            0, 25, 0, f_roundToUsefulNextTensOfThousands(df_nova[generic_y_signal].max(), 100),
+            0, 25, 0, f_roundToUsefulNextTensOfThousands(df_nova[generic_y_signal].max(), generic_y_signal),
             powerSignal_NAME + " over speed", scatter_dotTransparency, scatter_dotSize,
             generic_x_signal, generic_y_signal,
             "STW [kn]", y_axisLabel, plotDataEngineWise, 0, plotData_PWR_per_NM, convertSignalIntoDollar
@@ -1137,7 +1174,7 @@ def func_plot_GVU_Charts(
     if dict_plotTheseShips["plot_smeralda"]:
         func_createSimpleScatter(
             df_smeralda, dict_ships["ship_smeralda"],
-            0, 25, 0, f_roundToUsefulNextTensOfThousands(df_smeralda[generic_y_signal].max(), 100),
+            0, 25, 0, f_roundToUsefulNextTensOfThousands(df_smeralda[generic_y_signal].max(), generic_y_signal),
             powerSignal_NAME + "per NM sailed", scatter_dotTransparency, scatter_dotSize,
             generic_x_signal, generic_y_signal,
             "STW [kn]", y_axisLabel, plotDataEngineWise, 0, plotData_PWR_per_NM, convertSignalIntoDollar
@@ -1162,7 +1199,7 @@ def func_plot_GVU_Charts(
     if dict_plotTheseShips["plot_nova"]:
         func_createSimpleScatter(
             df_nova, dict_ships["ship_nova"],
-            0, 25, 0, f_roundToUsefulNextTensOfThousands(df_nova[generic_y_signal].max(), 100),
+            0, 25, 0, f_roundToUsefulNextTensOfThousands(df_nova[generic_y_signal].max(), generic_y_signal),
             powerSignal_NAME + " per NM sailed", scatter_dotTransparency, scatter_dotSize,
             generic_x_signal, generic_y_signal,
             "STW [kn]", y_axisLabel, plotDataEngineWise, 0, plotData_PWR_per_NM, convertSignalIntoDollar
@@ -1171,7 +1208,7 @@ def func_plot_GVU_Charts(
     if dict_plotTheseShips["plot_smeralda"]:
         func_createSimpleScatter(
             df_smeralda, dict_ships["ship_smeralda"],
-            0, 25, 0, f_roundToUsefulNextTensOfThousands(df_smeralda[generic_y_signal].max(), 100),
+            0, 25, 0, f_roundToUsefulNextTensOfThousands(df_smeralda[generic_y_signal].max(), generic_y_signal),
             powerSignal_NAME + "per NM sailed", scatter_dotTransparency, scatter_dotSize,
             generic_x_signal, generic_y_signal,
             "STW [kn]", y_axisLabel, plotDataEngineWise, 0, plotData_PWR_per_NM, convertSignalIntoDollar
@@ -1281,8 +1318,18 @@ def func_filterRawData(
     return df_nova, df_smeralda
 
 ' #####################################################################################################################'
+def func_getUserName():
+    username = getpass.getuser()
+
+    print("tool in use by: " + username)
+
+    return username
+
 ' #####################################################################################################################'
 ' #####################################################################################################################'
+' #####################################################################################################################'
+
+username = func_getUserName()
 
 generic_x_signal = ""
 generic_y_signal = ""
@@ -1300,7 +1347,6 @@ if redoFlagStructure:
         print("flag_rawData_" + func_getNameWithoutBlanks(thisColumn)+ " = " + "'" + thisColumn + "'")
 
 df_nova, df_smeralda = func_preCalcSomeFurtherValues(df_nova, df_smeralda)
-
 
 func_plotSFOC_Curves()
 
