@@ -4,6 +4,7 @@ from tkinter import *
 import os
 import math
 import getpass
+import numpy as np
 
 from bokeh.plotting import figure, show, output_file
 from bokeh.models import LinearAxis, ColumnDataSource, Range1d, LabelSet, Label, TableColumn, DataTable
@@ -218,6 +219,18 @@ flag_rawData_total_LNG_GVU_Flow = "TOTAL LNG FLOW"
 
 flag_rawData_avgSFOC_runningEngines = "AVG SFOC running engines"
 flag_rawData_avgLoad_runningEngines = "AVG Load Pct running engines"
+
+flag_polyFit_TotalSignal = "POLY FIT TOTAL"
+flag_polyFit_1EngineRunning_only = "POLY FIT 1DG running"
+flag_polyFit_2EngineRunning_only = "POLY FIT 2DGs running"
+flag_polyFit_3EngineRunning_only = "POLY FIT 3DG running"
+flag_polyFit_4EngineRunning_only = "POLY FIT 4DG running"
+
+flag_expFit_TotalSignal = "EXP-FIT TOTAL"
+flag_expFit_1EngineRunning_only = "EXP-FIT 1DG running"
+flag_expFit_2EngineRunning_only = "EXP-FIT 2DGs running"
+flag_expFit_3EngineRunning_only = "EXP-FIT 3DG running"
+flag_expFit_4EngineRunning_only = "EXP-FIT 4DG running"
 #endregion
 
 #region standard ship dict
@@ -253,6 +266,8 @@ scatter_FramHeight = 800
 scatter_dotTransparency = 0.3
 scatter_dotSize = 1
 
+plotDataEngineWise = True
+
 plotSFOC_Curves = True
 plotSFOC_per_engine_overSpeed = False
 plot_GVU_LNGCharts = False
@@ -277,6 +292,25 @@ dict_generic_y_signal = {
     "flag_rawData_avgSFOC_runningEngines":  0,
     "flag_rawData_avgLoad_runningEngines":  0,
 }
+
+dict_createlExponentialFit = {
+    "flag_rawData_totalSTRSPower":          0,
+    "flag_rawData_total_POD_PWR":           0,
+    "flag_rawData_total_POD_MTR_PRW":       0,
+    "flag_rawData_total_MainEngine_PWR":    0,
+    "flag_rawData_avgSFOC_runningEngines":  0,
+    "flag_rawData_avgLoad_runningEngines":  0,
+}
+
+dict_createlPolyFit = {
+    "flag_rawData_totalSTRSPower":          0,
+    "flag_rawData_total_POD_PWR":           0,
+    "flag_rawData_total_POD_MTR_PRW":       0,
+    "flag_rawData_total_MainEngine_PWR":    0,
+    "flag_rawData_avgSFOC_runningEngines":  0,
+    "flag_rawData_avgLoad_runningEngines":  0,
+}
+
 
 dict_plotTheseGenericGraphs = {
     "plot_signal_overSpeed": 1,
@@ -685,6 +719,7 @@ def func_createSimpleScatter(
     flag_ySignal,
     x_axisLabel,
     y_axisLabel,
+    createPolyFit, createExponentialFit,
     plotDataByAmountOfEnginesRunning = False,
     minSpeedToBeFilteredFor = 0,
     convert_y_into_value_per_NM = False,
@@ -728,6 +763,26 @@ def func_createSimpleScatter(
             alpha=scatter_dotTransparency,
             legend_label = thisShip + " " + graph_name
         )
+
+        if createPolyFit:
+            print("DRAW POLY FIT LINE")
+            scatterFrame_rawDataOverTime.circle(
+                thisDF[flag_xSignal],
+                thisDF[flag_polyFit_TotalSignal],
+                size=scatter_dotSize, color=dictColors[1],
+                alpha=scatter_dotTransparency,
+                legend_label="POLY-Fit 2nd " + thisShip + " " + graph_name
+            )
+
+        if createExponentialFit:
+            print("DRAW EXP FIT LINE")
+            scatterFrame_rawDataOverTime.circle(
+                thisDF[flag_xSignal],
+                thisDF[flag_expFit_TotalSignal],
+                size=scatter_dotSize, color=dictColors[1],
+                alpha=scatter_dotTransparency,
+                legend_label="EXP-Fit " + thisShip + " " + graph_name
+            )
 
     thisFileName = thisShip + graph_name
     output_file(thisFileName + '.html',  # dict_subFolderName["subfolder_exportGraphs"] + "/"
@@ -997,6 +1052,11 @@ def func_getSignalName(
     if y_signal == flag_rawData_avgLoad_runningEngines:
         return "AVG Load running engines [%]"
 
+    if y_signal == flag_rawData_avgSFOC_runningEngines:
+        return "AVG SFOC running engines"
+
+    print("missing y_signal " + y_signal)
+
     return "SIGNAL not defined"
 
 ' #####################################################################################################################'
@@ -1040,8 +1100,8 @@ def func_get_y_axisLabel(
 def func_plotGenericGraphs(
     df_nova,
     df_smeralda,
-    generic_x_signal,
-    generic_y_signal
+    generic_x_signal, generic_y_signal,
+    createPolyFit, createExponentialFit
 ):
     if generic_x_signal == "" or generic_y_signal == "":
         print("NO GENERIC SIGNAL DEFINED!!!")
@@ -1050,8 +1110,6 @@ def func_plotGenericGraphs(
         return
 
     powerSignal_NAME = func_getSignalName(generic_y_signal)
-
-    plotDataEngineWise = True
 
     # region GENERIC SIGNAL over Speed
     if dict_plotTheseGenericGraphs["plot_signal_overSpeed"]:
@@ -1063,12 +1121,14 @@ def func_plotGenericGraphs(
         y_axisLabel = func_get_y_axisLabel(powerSignal_NAME, plotData_PWR_per_NM, signalNameAppendix, convertSignalIntoDollar)
 
         if dict_plotTheseShips["plot_nova"]:
+
             func_createSimpleScatter(
                 df_nova, dict_ships["ship_nova"],
                 0, 25, 0, f_roundToUsefulNextTensOfThousands(df_nova[generic_y_signal].max(), generic_y_signal),
                 powerSignal_NAME + signalNameAppendix, scatter_dotTransparency, scatter_dotSize,
                 generic_x_signal, generic_y_signal,
-                x_axisLabel, y_axisLabel, plotDataEngineWise, 0, plotData_PWR_per_NM, convertSignalIntoDollar
+                x_axisLabel, y_axisLabel, createPolyFit, createExponentialFit,
+                plotDataEngineWise, 0, plotData_PWR_per_NM, convertSignalIntoDollar
             )
 
         if dict_plotTheseShips["plot_smeralda"]:
@@ -1077,7 +1137,8 @@ def func_plotGenericGraphs(
                 0, 25, 0, f_roundToUsefulNextTensOfThousands(df_smeralda[generic_y_signal].max(), generic_y_signal),
                 powerSignal_NAME + signalNameAppendix, scatter_dotTransparency, scatter_dotSize,
                 generic_x_signal, generic_y_signal,
-                x_axisLabel, y_axisLabel, plotDataEngineWise, 0, plotData_PWR_per_NM, convertSignalIntoDollar
+                x_axisLabel, y_axisLabel, createPolyFit, createExponentialFit,
+                plotDataEngineWise, 0, plotData_PWR_per_NM, convertSignalIntoDollar
             )
     # endregion
 
@@ -1097,7 +1158,8 @@ def func_plotGenericGraphs(
                 0, 25, 0, f_roundToUsefulNextTensOfThousands(df_nova[generic_y_signal].max(), generic_y_signal),
                 powerSignal_NAME + signalNameAppendix, scatter_dotTransparency, scatter_dotSize,
                 generic_x_signal, generic_y_signal,
-                x_axisLabel, y_axisLabel, plotDataEngineWise, 0, plotData_PWR_per_NM, convertSignalIntoDollar
+                x_axisLabel, y_axisLabel, createPolyFit, createExponentialFit,
+                plotDataEngineWise, 0, plotData_PWR_per_NM, convertSignalIntoDollar
             )
 
         if dict_plotTheseShips["plot_smeralda"]:
@@ -1106,7 +1168,8 @@ def func_plotGenericGraphs(
                 0, 25, 0, f_roundToUsefulNextTensOfThousands(df_smeralda[generic_y_signal].max(), generic_y_signal),
                 powerSignal_NAME + signalNameAppendix, scatter_dotTransparency, scatter_dotSize,
                 generic_x_signal, generic_y_signal,
-                x_axisLabel, y_axisLabel, plotDataEngineWise, 0, plotData_PWR_per_NM, convertSignalIntoDollar
+                x_axisLabel, y_axisLabel,createPolyFit, createExponentialFit,
+                plotDataEngineWise, 0, plotData_PWR_per_NM, convertSignalIntoDollar
             )
     # endregion
 
@@ -1126,7 +1189,8 @@ def func_plotGenericGraphs(
                 0, 25, 0, f_roundToUsefulNextTensOfThousands(df_nova[generic_y_signal].max(), generic_y_signal),
                 powerSignal_NAME + " per NM sailed", scatter_dotTransparency, scatter_dotSize,
                 generic_x_signal, generic_y_signal,
-                x_axisLabel, y_axisLabel, plotDataEngineWise, 0, plotData_PWR_per_NM, convertSignalIntoDollar
+                x_axisLabel, y_axisLabel, createPolyFit, createExponentialFit,
+                plotDataEngineWise, 0, plotData_PWR_per_NM, convertSignalIntoDollar,
             )
 
         if dict_plotTheseShips["plot_smeralda"]:
@@ -1135,20 +1199,22 @@ def func_plotGenericGraphs(
                 0, 25, 0, f_roundToUsefulNextTensOfThousands(df_smeralda[generic_y_signal].max(), generic_y_signal),
                 powerSignal_NAME + " per NM sailed", scatter_dotTransparency, scatter_dotSize,
                 generic_x_signal, generic_y_signal,
-                x_axisLabel, y_axisLabel, plotDataEngineWise, 0, plotData_PWR_per_NM, convertSignalIntoDollar
+                x_axisLabel, y_axisLabel, createPolyFit, createExponentialFit,
+                plotDataEngineWise, 0, plotData_PWR_per_NM, convertSignalIntoDollar
             )
     # endregion
 
 ' #####################################################################################################################'
 def func_plot_GVU_Charts(
     df_nova,
-    df_smeralda
+    df_smeralda,
+    createPolyFit, createExponentialFit
 ):
     if not plot_GVU_LNGCharts:
         return
 
     # region TOTAL GVU over Speed
-    plotDataEngineWise = True
+    # plotDataEngineWise = True
     plotData_PWR_per_NM = False
     convertSignalIntoDollar = False
 
@@ -1168,7 +1234,8 @@ def func_plot_GVU_Charts(
             0, 25, 0, f_roundToUsefulNextTensOfThousands(df_nova[generic_y_signal].max(), generic_y_signal),
             powerSignal_NAME + " over speed", scatter_dotTransparency, scatter_dotSize,
             generic_x_signal, generic_y_signal,
-            "STW [kn]", y_axisLabel, plotDataEngineWise, 0, plotData_PWR_per_NM, convertSignalIntoDollar
+            "STW [kn]", y_axisLabel, createPolyFit, createExponentialFit,
+            plotDataEngineWise, 0, plotData_PWR_per_NM, convertSignalIntoDollar
         )
 
     if dict_plotTheseShips["plot_smeralda"]:
@@ -1177,7 +1244,8 @@ def func_plot_GVU_Charts(
             0, 25, 0, f_roundToUsefulNextTensOfThousands(df_smeralda[generic_y_signal].max(), generic_y_signal),
             powerSignal_NAME + "per NM sailed", scatter_dotTransparency, scatter_dotSize,
             generic_x_signal, generic_y_signal,
-            "STW [kn]", y_axisLabel, plotDataEngineWise, 0, plotData_PWR_per_NM, convertSignalIntoDollar
+            "STW [kn]", y_axisLabel, createPolyFit, createExponentialFit,
+            plotDataEngineWise, 0, plotData_PWR_per_NM, convertSignalIntoDollar
         )
     # endregion
 
@@ -1202,7 +1270,8 @@ def func_plot_GVU_Charts(
             0, 25, 0, f_roundToUsefulNextTensOfThousands(df_nova[generic_y_signal].max(), generic_y_signal),
             powerSignal_NAME + " per NM sailed", scatter_dotTransparency, scatter_dotSize,
             generic_x_signal, generic_y_signal,
-            "STW [kn]", y_axisLabel, plotDataEngineWise, 0, plotData_PWR_per_NM, convertSignalIntoDollar
+            "STW [kn]", y_axisLabel, createPolyFit, createExponentialFit,
+            plotDataEngineWise, 0, plotData_PWR_per_NM, convertSignalIntoDollar,
         )
 
     if dict_plotTheseShips["plot_smeralda"]:
@@ -1211,7 +1280,8 @@ def func_plot_GVU_Charts(
             0, 25, 0, f_roundToUsefulNextTensOfThousands(df_smeralda[generic_y_signal].max(), generic_y_signal),
             powerSignal_NAME + "per NM sailed", scatter_dotTransparency, scatter_dotSize,
             generic_x_signal, generic_y_signal,
-            "STW [kn]", y_axisLabel, plotDataEngineWise, 0, plotData_PWR_per_NM, convertSignalIntoDollar
+            "STW [kn]", y_axisLabel, createPolyFit, createExponentialFit,
+            plotDataEngineWise, 0, plotData_PWR_per_NM, convertSignalIntoDollar
         )
     # endregion
 
@@ -1254,8 +1324,13 @@ def func_getRealFlagNotJustStr(genericSignal):
 def func_readGenericSignal(
     generic_x_signal,
     generic_y_signal,
+    createPolyFit,
+    createExponentialFit,
     thisSignalNumberInDict
 ):
+    createPolyFit = False
+    createExponentialFit = False
+
     for thisSignal in dict_generic_x_signal:
         if dict_generic_x_signal[thisSignal]:
             generic_x_signal = thisSignal
@@ -1273,7 +1348,25 @@ def func_readGenericSignal(
                 generic_y_signal = func_getRealFlagNotJustStr(generic_y_signal)
                 break
 
-    return generic_x_signal, generic_y_signal
+    subSignalCount = 0
+    for thisSignal in dict_createlPolyFit:
+        if dict_createlPolyFit[thisSignal]:
+            subSignalCount += 1
+            if subSignalCount == thisSignalNumberInDict:
+                createPolyFit = True
+                print("createPolyFit for generic_y_signal " + generic_y_signal)
+                break
+
+    subSignalCount = 0
+    for thisSignal in dict_createlExponentialFit:
+        if dict_createlExponentialFit[thisSignal]:
+            subSignalCount += 1
+            if subSignalCount == thisSignalNumberInDict:
+                createExponentialFit = True
+                print("createExponentialFit for generic_y_signal " + generic_y_signal)
+                break
+
+    return generic_x_signal, generic_y_signal, createPolyFit, createExponentialFit
 
 ' #####################################################################################################################'
 def func_check_Y_signalAmount():
@@ -1326,6 +1419,90 @@ def func_getUserName():
     return username
 
 ' #####################################################################################################################'
+def func_addPolyFitColumn(
+    thisDF,
+    generic_x_signal, generic_y_signal,
+    createPolyFit
+):
+    # thisDF = thisDF[thisDF[generic_y_signal] > 0]
+
+    finalKeyStoringCurveFitData = "cfDataKey"
+    func_thisPolynomialFit = {}
+    func_thisPolynomialFit[finalKeyStoringCurveFitData] = {}
+
+    thisDF[flag_polyFit_TotalSignal] = 0
+    thisDF[flag_polyFit_1EngineRunning_only] = 0
+    thisDF[flag_polyFit_2EngineRunning_only] = 0
+    thisDF[flag_polyFit_3EngineRunning_only] = 0
+    thisDF[flag_polyFit_4EngineRunning_only] = 0
+
+    if createPolyFit:
+        print("\n###CREATE POLY fit for " + generic_y_signal + " over " + generic_x_signal)
+        func_thisPolynomialFit[finalKeyStoringCurveFitData], test = \
+            f_getPolynomialFit(
+                thisDF[generic_x_signal],
+                thisDF[generic_y_signal], 2
+            )
+
+        print("### POLY FIT 2nd ###")
+        print(func_thisPolynomialFit[finalKeyStoringCurveFitData])
+
+        thisDF[flag_polyFit_TotalSignal] = func_thisPolynomialFit[finalKeyStoringCurveFitData](
+            thisDF[generic_x_signal])
+
+    return thisDF
+
+' #####################################################################################################################'
+def func_addExponentialFit(
+    thisDF,
+    generic_x_signal, generic_y_signal,
+    createExponentialFit
+):
+    thisDF = thisDF[thisDF[generic_y_signal] > 0]
+
+    thisDF = thisDF.reset_index(drop=True)
+
+    finalKeyStoringCurveFitData = "cfDataKey"
+    func_thisPolynomialFit = {}
+    func_thisPolynomialFit[finalKeyStoringCurveFitData] = {}
+
+    thisDF[flag_expFit_TotalSignal] = 0
+    thisDF[flag_expFit_1EngineRunning_only] = 0
+    thisDF[flag_expFit_2EngineRunning_only] = 0
+    thisDF[flag_expFit_3EngineRunning_only] = 0
+    thisDF[flag_expFit_4EngineRunning_only] = 0
+
+    if createExponentialFit:
+        print("\n###CREATE EXP fit for " + generic_y_signal + " over " + generic_x_signal)
+
+        log_y_data = np.log(
+            thisDF[generic_y_signal]
+        )
+
+        func_thisPolynomialFit[finalKeyStoringCurveFitData] = np.polyfit(
+            thisDF[generic_x_signal], log_y_data, 1
+        )
+
+        print("### EXP FIT ###")
+        print(func_thisPolynomialFit[finalKeyStoringCurveFitData])
+
+        thisDF[flag_expFit_TotalSignal] = \
+            np.exp(func_thisPolynomialFit[finalKeyStoringCurveFitData][1]) * \
+            np.exp(
+                func_thisPolynomialFit[finalKeyStoringCurveFitData][0] *
+                thisDF[generic_x_signal]
+            )
+
+    return thisDF
+
+' #####################################################################################################################'
+def f_getPolynomialFit(xValue, yValue, degreeOfFreedom):
+    weights = np.polyfit(xValue, yValue, degreeOfFreedom)
+    finalCurveAllPoints = np.poly1d(weights)
+
+    return finalCurveAllPoints, finalCurveAllPoints.r
+
+' #####################################################################################################################'
 ' #####################################################################################################################'
 ' #####################################################################################################################'
 
@@ -1333,6 +1510,8 @@ username = func_getUserName()
 
 generic_x_signal = ""
 generic_y_signal = ""
+createPolyFit = False
+createExponentialFit = False
 
 df_nova = pd.DataFrame()
 df_smeralda = pd.DataFrame()
@@ -1355,12 +1534,27 @@ activatedGenericSignals = func_check_Y_signalAmount()
 if activatedGenericSignals > 0:
     thisSignal = 1
     while thisSignal <= activatedGenericSignals:
-        generic_x_signal, generic_y_signal = func_readGenericSignal(generic_x_signal, generic_y_signal, thisSignal)
+        generic_x_signal, generic_y_signal, createPolyFit, createExponentialFit = \
+            func_readGenericSignal(generic_x_signal, generic_y_signal, createPolyFit, createExponentialFit, thisSignal)
 
-        func_plotGenericGraphs(df_nova, df_smeralda, generic_x_signal, generic_y_signal)
+        df_nova = func_addPolyFitColumn(
+            df_nova, generic_x_signal, generic_y_signal, createPolyFit)
+
+        df_smeralda = func_addPolyFitColumn(
+            df_smeralda, generic_x_signal, generic_y_signal, createPolyFit)
+
+        df_nova = func_addExponentialFit(
+            df_nova, generic_x_signal, generic_y_signal, createExponentialFit)
+
+        df_smeralda = func_addExponentialFit(
+            df_smeralda, generic_x_signal, generic_y_signal, createExponentialFit)
+
+        func_plotGenericGraphs(
+            df_nova, df_smeralda, generic_x_signal, generic_y_signal, createPolyFit, createExponentialFit
+        )
 
         thisSignal+=1
 
-func_plot_GVU_Charts(df_nova, df_smeralda)
+func_plot_GVU_Charts(df_nova, df_smeralda, createPolyFit, createExponentialFit)
 
 func_exportFiles(df_nova, df_smeralda)
