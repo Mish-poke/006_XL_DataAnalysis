@@ -29,7 +29,7 @@ dict_readTheseSubFiles_nova = {
     '_ FINE nova ALL Chilled WTR Temp per FZ':  0,
     '_ FINE nova ALL CSW Pumps PWR':            0,
     '_ FINE nova ALL DG ACTIVE PWR':                1,
-    '_ FINE nova ALL DG POWER Factor':              1,
+    '_ FINE nova ALL DG POWER Factor':              0,
     '_ FINE nova ALL FANs AWP INC BIO':         0,
     '_ FINE nova ALL FANs BR-CHLR':             0,
     '_ FINE nova ALL Fans BT':                  0,
@@ -41,11 +41,11 @@ dict_readTheseSubFiles_nova = {
     '_ FINE nova ALL FANs ROP NitTech':         0,
     '_ FINE nova ALL FCU HEATER per FZ':        0,
     '_ FINE nova ALL GSP BTR PRW':              0,
-    '_ FINE nova ALL GSP POD AUX PWR':          0,
+    '_ FINE nova ALL GSP POD AUX PWR':              1,
     '_ FINE nova ALL GSP POD TOT PWR':              1,
     '_ FINE nova ALL GSP TSC GVR VENT':         0,
-    '_ FINE nova ALL GVU FLOW ME':                  1,
-    '_ FINE nova ALL GVU TEMP':                     1,
+    '_ FINE nova ALL GVU FLOW ME':                  0,
+    '_ FINE nova ALL GVU TEMP':                     0,
     '_ FINE nova ALL HOTEL PWR per FZ':         0,
     '_ FINE nova ALL HVAC AHU per FZ':          0,
     '_ FINE nova ALL HVAC PWR per FZ':          0,
@@ -55,15 +55,15 @@ dict_readTheseSubFiles_nova = {
     '_ FINE nova ALL LT CIRC PUMP PWR':         0,
     '_ FINE nova ALL ME Reactive PWR':          0,
     '_ FINE nova ALL NAV Signals':                  1,
-    '_ FINE nova ALL POD CAU FAN PWR':          0,
+    '_ FINE nova ALL POD CAU FAN PWR':              1,
     '_ FINE nova ALL POD PROP MTR PWR':             1,
     '_ FINE nova ALL POD PWR':                      1,
     '_ FINE nova ALL Pools Jaccuzzies':         0,
     '_ FINE nova ALL RF PWR':                   0,
     '_ FINE nova ALL RMU per FZ':               0,
     '_ FINE nova ALL STEAM Flows':              0,
-    '_ FINE nova ALL STRS':                         1,
-    '_ FINE nova ALL TEMP Pressure Wind':       0,
+    '_ FINE nova ALL STRS':                         0,
+    '_ FINE nova ALL TEMP Pressure Wind':           1,
     '_ FINE nova ALL WHR Signals':              0
 }
 #endregion
@@ -89,17 +89,17 @@ dict_readTheseSubFiles_smeralda = {
     '_ FINE smeralda ALL FANs ROP NitTech':         0,
     '_ FINE smeralda ALL FCU HEATER per FZ':        0,
     '_ FINE smeralda ALL GSP BTR PRW':              0,
-    '_ FINE smeralda ALL GSP POD AUX PWR':          0,
+    '_ FINE smeralda ALL GSP POD AUX PWR':              1,
     '_ FINE smeralda ALL GSP POD TOT PWR':              1,
     '_ FINE smeralda ALL GSP TSC GVR VENT':         0,
-    '_ FINE smeralda ALL GVU FLOW ME':                  1,
+    '_ FINE smeralda ALL GVU FLOW ME':                  0,
     '_ FINE smeralda ALL GVU TEMP':                 0,
     '_ FINE smeralda ALL HOTEL PWR per FZ':         0,
     '_ FINE smeralda ALL HVAC AHU per FZ':          0,
     '_ FINE smeralda ALL HVAC PWR per FZ':          0,
     '_ FINE smeralda ALL HVAC Standard':            0,
     '_ FINE smeralda ALL Ignition Fuel Flow':       0,
-    '_ FINE smeralda ALL LAT LONG':                 0,
+    '_ FINE smeralda ALL LAT LONG':                     1,
     '_ FINE smeralda ALL LT CIRC PUMP PWR':         0,
     '_ FINE smeralda ALL ME PWR STRANGE SIGNAL':    0,
     '_ FINE smeralda ALL ME Reactive PWR':          0,
@@ -111,8 +111,8 @@ dict_readTheseSubFiles_smeralda = {
     '_ FINE smeralda ALL RF PWR':                   0,
     '_ FINE smeralda ALL RMU per FZ':               0,
     '_ FINE smeralda ALL STEAM Flows':              0,
-    '_ FINE smeralda ALL STRS':                         1,
-    '_ FINE smeralda ALL TEMP Pressure Wind':       0,
+    '_ FINE smeralda ALL STRS':                         0,
+    '_ FINE smeralda ALL TEMP Pressure Wind':           1,
     '_ FINE smeralda ALL WHR Signals':              0
 }
 #endregion
@@ -335,12 +335,17 @@ def f_readAllFilesInSubfolders(
         folder_location = 'C:\\Users\\500095\\OneDrive - Carnival Corporation\\Desktop\\HOME\\XL-Class-Automation-Data'
 
     subDF = pd.DataFrame()
+    firstDF_allFilesSameFolder = pd.DataFrame()
+    subDF_allFilesSameFolder = pd.DataFrame()
+
     list_filesToBeLoaded = []
+    list_fileFolders = []
 
     print("LETS LOOP through all folders and subfolders within " + str(folder_location))
     for subdir, dirs, files in os.walk(folder_location):
         splitString = r'\''
         subDirFolderName = subdir.split(splitString[:1])
+        print("subDirFolderName: " + str(subDirFolderName))
 
         thisSubfolderName = subDirFolderName[len(subDirFolderName)-1]
         if thisSubfolderName in dict_signalsThisShip:
@@ -356,23 +361,61 @@ def f_readAllFilesInSubfolders(
                     if filepath.endswith(".csv"):
                         print("load me " + str(filepath))
                         list_filesToBeLoaded.append(filepath)
+                        list_fileFolders.append(subdir)
 
+    mergeCount = 0
+    fileCount = -1
     for thisFile in list_filesToBeLoaded:
+        fileCount+= 1
         print("lets read next file >>: " + str(thisFile))
         if df_thisShip.shape[0] == 0:
+            print("reading first file ever")
             df_thisShip = pd.read_csv(thisFile, sep=";", decimal=".")
             df_thisShip[flag_rawData_timestamp] = pd.to_datetime(df_thisShip[flag_rawData_timestamp])
         else:
+            print("reading next file")
             subDF = pd.read_csv(thisFile, sep=";", decimal=".")
             subDF[flag_rawData_timestamp] = pd.to_datetime(subDF[flag_rawData_timestamp])
 
+
             if subDF[flag_rawData_timestamp].min() > df_thisShip[flag_rawData_timestamp].max():
+                print("pd.concat")
+                print("lines in df before merge: " + str(df_thisShip.shape[0]))
                 df_thisShip = pd.concat([df_thisShip, subDF])
+                print("lines in df after merge: " + str(df_thisShip.shape[0]))
             else:
+
+                print("thisFileDir " + list_fileFolders[fileCount])
+
+                if list_fileFolders[fileCount] == list_fileFolders[fileCount-1]:
+                    firstDF_allFilesSameFolder = pd.concat([firstDF_allFilesSameFolder, subDF])
+
+                    if fileCount < len(list_fileFolders)-1:
+                        if list_fileFolders[fileCount] == list_fileFolders[fileCount+1]:
+                            print("more files from same folder coming, wait before merging")
+                            continue
+                        else:
+                            print("that was the last file out of this folder, we can go ahead and merge with the main DF")
+                else:
+                    firstDF_allFilesSameFolder = subDF
+                    if fileCount < len(list_fileFolders)-1:
+                        if list_fileFolders[fileCount] == list_fileFolders[fileCount+1]:
+                            print("more files from same folder coming, wait before merging")
+                            continue
+                        else:
+                            print("that was the last file out of this folder, we can go ahead and merge with the main DF")
+
+                mergeCount+=1
+                print("pd.merge_asof")
+                # for thisColumn in subDF.columns.unique():
+                #     print("   column: " + thisColumn)
+
                 df_thisShip = f_mergeDataFramesByTimeStamp(
-                    df_thisShip, subDF, 'df_strsAC1',
+                    df_thisShip, firstDF_allFilesSameFolder,
                     flag_rawData_timestamp,
-                    flag_rawData_timestamp)
+                    flag_rawData_timestamp
+                )
+                # df_thisShip.to_csv(("df_thisShip"+str(mergeCount)+".csv"), sep = ";", decimal = ".")
 
     return df_thisShip
 
@@ -380,7 +423,6 @@ def f_readAllFilesInSubfolders(
 def f_mergeDataFramesByTimeStamp(
     masterDF,
     dfToBeMatched,
-    dataframeName,
     mergeOnThisColumn,
     mergeByThisColumn
 ):
@@ -1516,10 +1558,14 @@ createExponentialFit = False
 df_nova = pd.DataFrame()
 df_smeralda = pd.DataFrame()
 
-df_nova = f_readAllFilesInSubfolders(df_nova, dict_readTheseSubFiles_nova, dict_ships["ship_nova"])
+# df_nova = f_readAllFilesInSubfolders(df_nova, dict_readTheseSubFiles_nova, dict_ships["ship_nova"])
 df_smeralda = f_readAllFilesInSubfolders(df_smeralda, dict_readTheseSubFiles_smeralda, dict_ships["ship_smeralda"])
 
-df_nova, df_smeralda = func_filterRawData(df_nova, df_smeralda)
+# df_nova, df_smeralda = func_filterRawData(df_nova, df_smeralda)
+
+# df_nova.to_csv("df_nova_raw.csv", sep = ";", decimal = ".", index=False)
+df_smeralda.to_csv("df_smeralda_raw.csv", sep = ";", decimal = ".", index=False)
+exit()
 
 if redoFlagStructure:
     for thisColumn in df_nova.columns:
