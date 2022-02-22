@@ -44,7 +44,7 @@ dict_readTheseSubFiles_nova = {
     '_ FINE nova ALL GSP POD AUX PWR':              1,
     '_ FINE nova ALL GSP POD TOT PWR':              1,
     '_ FINE nova ALL GSP TSC GVR VENT':         0,
-    '_ FINE nova ALL GVU FLOW ME':                  0,
+    '_ FINE nova ALL GVU FLOW ME':                  1,
     '_ FINE nova ALL GVU TEMP':                     0,
     '_ FINE nova ALL HOTEL PWR per FZ':         0,
     '_ FINE nova ALL HVAC AHU per FZ':          0,
@@ -92,7 +92,7 @@ dict_readTheseSubFiles_smeralda = {
     '_ FINE smeralda ALL GSP POD AUX PWR':              1,
     '_ FINE smeralda ALL GSP POD TOT PWR':              1,
     '_ FINE smeralda ALL GSP TSC GVR VENT':         0,
-    '_ FINE smeralda ALL GVU FLOW ME':                  0,
+    '_ FINE smeralda ALL GVU FLOW ME':                  1,
     '_ FINE smeralda ALL GVU TEMP':                 0,
     '_ FINE smeralda ALL HOTEL PWR per FZ':         0,
     '_ FINE smeralda ALL HVAC AHU per FZ':          0,
@@ -123,10 +123,10 @@ flag_rawData_MV1_DG1_ACTIVE_PWR_kW = 'MV1 DG1 ACTIVE PWR kW'
 flag_rawData_MV1_DG2_ACTIVE_PWR_kW = 'MV1 DG2 ACTIVE PWR kW'
 flag_rawData_MV2_DG3_ACTIVE_PWR_kW = 'MV2 DG3 ACTIVE PWR kW'
 flag_rawData_MV2_DG4_ACTIVE_PWR_kW = 'MV2 DG4 ACTIVE PWR kW'
-flag_rawData_ME1_FUEL_GAS_GVU_FLOW_x = 'ME1 FUEL GAS GVU FLOW_x'
-flag_rawData_ME2_FUEL_GAS_GVU_FLOW_x = 'ME2 FUEL GAS GVU FLOW_x'
-flag_rawData_ME3_FUEL_GAS_GVU_FLOW_x = 'ME3 FUEL GAS GVU FLOW_x'
-flag_rawData_ME4_FUEL_GAS_GVU_FLOW_x = 'ME4 FUEL GAS GVU FLOW_x'
+flag_rawData_ME1_FUEL_GAS_GVU_FLOW_x = 'ME1 FUEL GAS GVU FLOW'
+flag_rawData_ME2_FUEL_GAS_GVU_FLOW_x = 'ME2 FUEL GAS GVU FLOW'
+flag_rawData_ME3_FUEL_GAS_GVU_FLOW_x = 'ME3 FUEL GAS GVU FLOW'
+flag_rawData_ME4_FUEL_GAS_GVU_FLOW_x = 'ME4 FUEL GAS GVU FLOW'
 flag_rawData_GVU_ME1_AIR_FLOW_x = 'GVU ME1 AIR FLOW_x'
 flag_rawData_GVU_ME2_AIR_FLOW_x = 'GVU ME2 AIR FLOW_x'
 flag_rawData_GVU_ME3_AIR_FLOW_x = 'GVU ME3 AIR FLOW_x'
@@ -154,8 +154,8 @@ flag_rawData_GVU_AFT_SUPPLY_AIR_TEMP_y = 'GVU AFT SUPPLY AIR TEMP_y'
 flag_rawData_INS_WATERDEP_BELOW_KEEL_x = 'INS WATERDEP.BELOW KEEL_x'
 flag_rawData_INS_TRUE_WINDSPEED_x = 'INS TRUE WINDSPEED_x'
 flag_rawData_INS_TRUE_WINDDIR_x = 'INS TRUE WINDDIR_x'
-flag_rawData_INS_SPEED_THROUGH_WATER_x = 'INS SPEED THROUGH WATER_x'
-flag_rawData_INS_SPEED_OVER_GROUND_x = 'INS SPEED OVER GROUND_x'
+flag_rawData_INS_SPEED_THROUGH_WATER_x = 'INS SPEED THROUGH WATER'
+flag_rawData_INS_SPEED_OVER_GROUND_x = 'INS SPEED OVER GROUND'
 flag_rawData_INS_DEWPOINT_x = 'INS DEWPOINT_x'
 flag_rawData_INS_HUMIDITY_x = 'INS HUMIDITY_x'
 flag_rawData_INS_RATE_OF_TURN_x = 'INS RATE OF TURN_x'
@@ -220,11 +220,11 @@ flag_rawData_total_LNG_GVU_Flow = "TOTAL LNG FLOW"
 flag_rawData_avgSFOC_runningEngines = "AVG SFOC running engines"
 flag_rawData_avgLoad_runningEngines = "AVG Load Pct running engines"
 
-flag_polyFit_TotalSignal = "POLY FIT TOTAL"
-flag_polyFit_1EngineRunning_only = "POLY FIT 1DG running"
-flag_polyFit_2EngineRunning_only = "POLY FIT 2DGs running"
-flag_polyFit_3EngineRunning_only = "POLY FIT 3DG running"
-flag_polyFit_4EngineRunning_only = "POLY FIT 4DG running"
+flag_expFit_TotalSignal = "POLY FIT TOTAL"
+flag_expFit_1EngineRunning_only = "POLY FIT 1DG running"
+flag_expFit_2EngineRunning_only = "POLY FIT 2DGs running"
+flag_expFit_3EngineRunning_only = "POLY FIT 3DG running"
+flag_expFit_4EngineRunning_only = "POLY FIT 4DG running"
 
 flag_expFit_TotalSignal = "EXP-FIT TOTAL"
 flag_expFit_1EngineRunning_only = "EXP-FIT 1DG running"
@@ -253,18 +253,22 @@ dict_colorsForScatter = {
 dict_colorsForScatter_Dark = {
     1: '#475423', #'#8ddbbc',
     2: '#294996',
-    3: '#923fb5',
+    3: '#9ab543',
     4: '#6e1a3c'
 }
 #endregion
 
 #region ADJUST PLOTs
 useDarkScatter = True
-scatter_FrameWidth = 1200
+scatter_FrameWidth = 1400
 scatter_FramHeight = 800
 
-scatter_dotTransparency = 0.3
-scatter_dotSize = 1
+scatter_dotTransparency = 0.25
+scatter_dotSize = 2
+
+curve_dotTransparency = 0.8
+curveFit_dotSize = 5
+
 
 plotDataEngineWise = True
 
@@ -290,7 +294,7 @@ dict_generic_y_signal = {
     "flag_rawData_total_POD_MTR_PRW":       0,
     "flag_rawData_total_MainEngine_PWR":    1,
     "flag_rawData_avgSFOC_runningEngines":  0,
-    "flag_rawData_avgLoad_runningEngines":  0,
+    "flag_rawData_avgLoad_runningEngines":  1,
 }
 
 dict_createlExponentialFit = {
@@ -302,19 +306,19 @@ dict_createlExponentialFit = {
     "flag_rawData_avgLoad_runningEngines":  0,
 }
 
-dict_createlPolyFit = {
+dict_createPolyFit = {
     "flag_rawData_totalSTRSPower":          0,
     "flag_rawData_total_POD_PWR":           0,
     "flag_rawData_total_POD_MTR_PRW":       0,
     "flag_rawData_total_MainEngine_PWR":    0,
     "flag_rawData_avgSFOC_runningEngines":  0,
-    "flag_rawData_avgLoad_runningEngines":  0,
+    "flag_rawData_avgLoad_runningEngines":  1,
 }
 
 
 dict_plotTheseGenericGraphs = {
     "plot_signal_overSpeed": 1,
-    "plot_signal_perNMsailed_overSpeed": 1,
+    "plot_signal_perNMsailed_overSpeed": 0,
     "plot_signal_perDollar_perNMSailed_overSpeed": 0
 }
 #endregion
@@ -558,10 +562,85 @@ def func_plotThisEnginesSFOC(
         thisDF[thisDF[flag_engineSFOC] > 100][flag_engineSFOC],
         size=scatter_dotSize, color=dictColors[engineCount],
         alpha=scatter_dotTransparency,
-        legend_label=thisShip + " SFOC DG" + str(engineCount)
+        legend_label=thisShip + " RAW SFOC DG" + str(engineCount)
+    )
+
+    finalKeyStoringCurveFitData = "cfDataKey"
+    func_thisPolynomialFit = {}
+    func_thisPolynomialFit[finalKeyStoringCurveFitData] = {}
+
+    thisDF = thisDF[thisDF[flag_loadPercent] >= 40]
+
+    func_thisPolynomialFit[finalKeyStoringCurveFitData], test = \
+        f_getPolynomialFit(
+            thisDF[thisDF[flag_engineSFOC] > 100][flag_loadPercent],
+            thisDF[thisDF[flag_engineSFOC] > 100][flag_engineSFOC], 3
+        )
+
+    print("### POLY FIT 2nd ###")
+    print(func_thisPolynomialFit[finalKeyStoringCurveFitData])
+
+    thisDF[flag_expFit_TotalSignal] = func_thisPolynomialFit[finalKeyStoringCurveFitData](
+        thisDF[flag_loadPercent])
+
+    scatterFrame_rawDataOverTime.circle(
+        thisDF[thisDF[flag_engineSFOC] > 100][flag_loadPercent],
+        thisDF[thisDF[flag_engineSFOC] > 100][flag_expFit_TotalSignal],
+        size=curveFit_dotSize, color=dictColors[engineCount],
+        alpha=curve_dotTransparency,
+        legend_label=thisShip + " SFOC DG" + str(engineCount) + " (Load >=40%) >> " + f_getCurveFitAsText(func_thisPolynomialFit, finalKeyStoringCurveFitData)
     )
 
     return scatterFrame_rawDataOverTime
+
+' #####################################################################################################################'
+def f_getCurveFitAsText(
+    func_thisPolynomialFit,
+    keyToExtractCurveFit
+):
+    print("count of features " + str(len(func_thisPolynomialFit[keyToExtractCurveFit])))
+
+    finalString = ""
+    thisPower = len(func_thisPolynomialFit[keyToExtractCurveFit])
+    for thisElement in func_thisPolynomialFit[keyToExtractCurveFit]:
+        plusMinus = "+"
+        if float(thisElement) < 0:
+            plusMinus = ""
+
+        if thisPower > 1:
+            subElement = plusMinus + str(round(float(thisElement), f_getRoundingFactor(float(thisElement)))) + "*v^"+str(thisPower) + " "
+            finalString = finalString + subElement
+        else:
+            if thisPower > 0:
+                subElement = plusMinus + str(round(float(thisElement), f_getRoundingFactor(float(thisElement)))) +"*v"+ " "
+                finalString = finalString + subElement
+            else:
+                subElement = plusMinus + str(round(float(thisElement), f_getRoundingFactor(float(thisElement))))+ " "
+                finalString = finalString + subElement
+
+        thisPower = thisPower - 1
+
+    print(finalString)
+
+    return(finalString)
+
+' #####################################################################################################################'
+def f_getRoundingFactor(thisElement):
+    roundingFactor = 0
+    if thisElement < 1000:
+        roundingFactor = 1
+    if thisElement < 100:
+        roundingFactor = 2
+    if thisElement < 10:
+        roundingFactor = 3
+    if thisElement < 1:
+        roundingFactor = 4
+    if thisElement < 0.1:
+        roundingFactor = 5
+    if thisElement < 0.01:
+        roundingFactor = 6
+
+    return roundingFactor
 
 ' #####################################################################################################################'
 def func_printSFOC(
@@ -571,7 +650,7 @@ def func_printSFOC(
     scatterFrame_rawDataOverTime = f_prepareTheScatterFrame(
             scatter_FrameWidth, scatter_FramHeight, (0, 100),
             (100, 260),
-            str(thisShip + " SFOC LNG per engine")
+            str(thisShip + " LNG SFOC [g/kWh] engine")
         )
 
     scatterFrame_rawDataOverTime = func_plotThisEnginesSFOC(
@@ -601,7 +680,7 @@ def func_printSFOC(
 
     citation = Label(
         x=scatter_FrameWidth - 200, y=5, x_units='screen', y_units='screen',
-        text='TR@CMG 2021', render_mode='css',
+        text='TR@CMG 2022', render_mode='css',
         border_line_color='black', border_line_alpha=1.0,
         background_fill_color="#cbe6f5", background_fill_alpha=1.0
     )
@@ -774,6 +853,12 @@ def func_createSimpleScatter(
         str(thisShip + " " + graph_name)
     )
 
+    createPolyFit = True
+
+    finalKeyStoringCurveFitData = "cfDataKey"
+    func_thisPolynomialFit = {}
+    func_thisPolynomialFit[finalKeyStoringCurveFitData] = {}
+
     dictColors = func_getScatterColor()
 
     if convert_y_into_value_per_NM:
@@ -784,6 +869,7 @@ def func_createSimpleScatter(
     if plotDataByAmountOfEnginesRunning:
         thisEngine = 1
         while thisEngine <= 4:
+            print("in the final loop >>> plot this signal " + flag_ySignal)
             scatterFrame_rawDataOverTime.circle(
                 thisDF[
                     (thisDF[flag_rawData_enginesRunning] == thisEngine) &
@@ -793,8 +879,42 @@ def func_createSimpleScatter(
                     (thisDF[flag_rawData_INS_SPEED_THROUGH_WATER_x] >= minSpeedToBeFilteredFor)][flag_ySignal],
                 size=scatter_dotSize, color=dictColors[thisEngine],
                 alpha=scatter_dotTransparency,
-                legend_label = thisShip + " " + graph_name + " " + str(thisEngine) +"DG running"
+                legend_label = thisShip + " " + graph_name + " " + str(thisEngine) +"DG running (" + str(
+                    thisDF.loc[
+                        (thisDF[flag_rawData_enginesRunning] == thisEngine) &
+                        (thisDF[flag_rawData_INS_SPEED_THROUGH_WATER_x] >= minSpeedToBeFilteredFor)][flag_ySignal].count()
+                ) + "x)"
             )
+
+            if createPolyFit:
+                print("and now lets do the poly fit this engine ")
+                func_thisPolynomialFit[finalKeyStoringCurveFitData], test = \
+                    f_getPolynomialFit(
+                        thisDF[
+                            (thisDF[flag_rawData_enginesRunning] == thisEngine) &
+                            (thisDF[flag_rawData_INS_SPEED_THROUGH_WATER_x] >= minSpeedToBeFilteredFor)][flag_xSignal],
+                        thisDF[
+                            (thisDF[flag_rawData_enginesRunning] == thisEngine) &
+                            (thisDF[flag_rawData_INS_SPEED_THROUGH_WATER_x] >= minSpeedToBeFilteredFor)][flag_ySignal], 2
+                    )
+
+                print("### POLY FIT 2nd ###")
+                print(func_thisPolynomialFit[finalKeyStoringCurveFitData])
+
+                thisDF[flag_expFit_TotalSignal] = \
+                    func_thisPolynomialFit[finalKeyStoringCurveFitData](thisDF[flag_xSignal])
+
+                scatterFrame_rawDataOverTime.circle(
+                    thisDF[
+                        (thisDF[flag_rawData_enginesRunning] == thisEngine) &
+                        (thisDF[flag_rawData_INS_SPEED_THROUGH_WATER_x] >= minSpeedToBeFilteredFor)][flag_xSignal],
+                    thisDF[
+                        (thisDF[flag_rawData_enginesRunning] == thisEngine) &
+                        (thisDF[flag_rawData_INS_SPEED_THROUGH_WATER_x] >= minSpeedToBeFilteredFor)][flag_expFit_TotalSignal],
+                    size=scatter_dotSize, color=dictColors[thisEngine],
+                    alpha=scatter_dotTransparency,
+                    legend_label=thisShip + " " + graph_name + " " + str(thisEngine) + "DG running >> " + f_getCurveFitAsText(func_thisPolynomialFit, finalKeyStoringCurveFitData)
+                )
 
             thisEngine+=1
     else:
@@ -810,7 +930,7 @@ def func_createSimpleScatter(
             print("DRAW POLY FIT LINE")
             scatterFrame_rawDataOverTime.circle(
                 thisDF[flag_xSignal],
-                thisDF[flag_polyFit_TotalSignal],
+                thisDF[flag_expFit_TotalSignal],
                 size=scatter_dotSize, color=dictColors[1],
                 alpha=scatter_dotTransparency,
                 legend_label="POLY-Fit 2nd " + thisShip + " " + graph_name
@@ -833,7 +953,7 @@ def func_createSimpleScatter(
 
     citation = Label(
         x=scatter_FrameWidth - 220, y=5, x_units='screen', y_units='screen',
-        text='TR@CMG 2021', render_mode='css',
+        text='TR@CMG 2022', render_mode='css',
         border_line_color='black', border_line_alpha=1.0,
         background_fill_color="#cbe6f5", background_fill_alpha=1.0
     )
@@ -1391,8 +1511,8 @@ def func_readGenericSignal(
                 break
 
     subSignalCount = 0
-    for thisSignal in dict_createlPolyFit:
-        if dict_createlPolyFit[thisSignal]:
+    for thisSignal in dict_createPolyFit:
+        if dict_createPolyFit[thisSignal]:
             subSignalCount += 1
             if subSignalCount == thisSignalNumberInDict:
                 createPolyFit = True
@@ -1472,11 +1592,11 @@ def func_addPolyFitColumn(
     func_thisPolynomialFit = {}
     func_thisPolynomialFit[finalKeyStoringCurveFitData] = {}
 
-    thisDF[flag_polyFit_TotalSignal] = 0
-    thisDF[flag_polyFit_1EngineRunning_only] = 0
-    thisDF[flag_polyFit_2EngineRunning_only] = 0
-    thisDF[flag_polyFit_3EngineRunning_only] = 0
-    thisDF[flag_polyFit_4EngineRunning_only] = 0
+    thisDF[flag_expFit_TotalSignal] = 0
+    thisDF[flag_expFit_1EngineRunning_only] = 0
+    thisDF[flag_expFit_2EngineRunning_only] = 0
+    thisDF[flag_expFit_3EngineRunning_only] = 0
+    thisDF[flag_expFit_4EngineRunning_only] = 0
 
     if createPolyFit:
         print("\n###CREATE POLY fit for " + generic_y_signal + " over " + generic_x_signal)
@@ -1489,7 +1609,7 @@ def func_addPolyFitColumn(
         print("### POLY FIT 2nd ###")
         print(func_thisPolynomialFit[finalKeyStoringCurveFitData])
 
-        thisDF[flag_polyFit_TotalSignal] = func_thisPolynomialFit[finalKeyStoringCurveFitData](
+        thisDF[flag_expFit_TotalSignal] = func_thisPolynomialFit[finalKeyStoringCurveFitData](
             thisDF[generic_x_signal])
 
     return thisDF
@@ -1520,12 +1640,11 @@ def func_addExponentialFit(
         log_y_data = np.log(
             thisDF[generic_y_signal]
         )
-
+        
         func_thisPolynomialFit[finalKeyStoringCurveFitData] = np.polyfit(
             thisDF[generic_x_signal], log_y_data, 1
         )
-
-        print("### EXP FIT ###")
+        
         print(func_thisPolynomialFit[finalKeyStoringCurveFitData])
 
         thisDF[flag_expFit_TotalSignal] = \
@@ -1558,14 +1677,14 @@ createExponentialFit = False
 df_nova = pd.DataFrame()
 df_smeralda = pd.DataFrame()
 
-# df_nova = f_readAllFilesInSubfolders(df_nova, dict_readTheseSubFiles_nova, dict_ships["ship_nova"])
+df_nova = f_readAllFilesInSubfolders(df_nova, dict_readTheseSubFiles_nova, dict_ships["ship_nova"])
 df_smeralda = f_readAllFilesInSubfolders(df_smeralda, dict_readTheseSubFiles_smeralda, dict_ships["ship_smeralda"])
 
 # df_nova, df_smeralda = func_filterRawData(df_nova, df_smeralda)
 
 # df_nova.to_csv("df_nova_raw.csv", sep = ";", decimal = ".", index=False)
-df_smeralda.to_csv("df_smeralda_raw.csv", sep = ";", decimal = ".", index=False)
-exit()
+# df_smeralda.to_csv("df_smeralda_raw.csv", sep = ";", decimal = ".", index=False)
+# exit()
 
 if redoFlagStructure:
     for thisColumn in df_nova.columns:
